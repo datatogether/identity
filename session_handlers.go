@@ -94,6 +94,8 @@ func setUserSessionCookie(w http.ResponseWriter, r *http.Request, id string) err
 
 func SessionHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	case "OPTIONS":
+		CORSHandler(w, r)
 	case "GET":
 		GetSessionHandler(w, r)
 	case "POST":

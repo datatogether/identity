@@ -19,6 +19,7 @@ func middleware(handler http.HandlerFunc) http.HandlerFunc {
 		// 	// If TLS is enabled, set 1 week strict TLS, 1 week for now to prevent catastrophic mess-ups
 		// 	w.Header().Add("Strict-Transport-Security", "max-age=604800")
 		// }
+		addCORSHeaders(w, r)
 		handler(w, r)
 	}
 }
@@ -43,10 +44,25 @@ func authMiddleware(handler http.HandlerFunc) http.HandlerFunc {
 			// 	// If TLS is enabled, set 1 week strict TLS, 1 week for now to prevent catastrophic mess-ups
 			// 	w.Header().Add("Strict-Transport-Security", "max-age=604800")
 			// }
+			addCORSHeaders(w, r)
 			handler(w, r)
 		}
 	}
 
 	// no-auth middware func
 	return middleware(handler)
+}
+
+// addCORSHeaders adds CORS header info for whitelisted servers
+func addCORSHeaders(w http.ResponseWriter, r *http.Request) {
+	origin := r.Header.Get("Origin")
+	for _, o := range cfg.AllowedOrigins {
+		if origin == o {
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+			w.Header().Set("Access-Control-Allow-Methods", "GET, PUT, POST, DELETE, OPTIONS")
+			w.Header().Set("Access-Control-Allow-Headers", "Content-Type,Authorization")
+			w.Header().Set("Access-Control-Allow-Credentials", "true")
+			return
+		}
+	}
 }

@@ -166,6 +166,12 @@ func (u *User) Save(db *sql.DB) error {
 			u.Created = time.Now().Unix()
 			u.Updated = u.Created
 
+			token, e := NewAccessToken(db)
+			if e != nil {
+				return Error500IfErr(e)
+			}
+			u.accessToken = token
+
 			if _, e = db.Exec("INSERT INTO users VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, false, $12, false)", u.Id, u.Created, u.Updated, u.Username, u.Type, hash, u.Email, u.Name, u.Description, u.HomeUrl, u.emailConfirmed, u.accessToken); e != nil {
 				return NewFmtError(500, e.Error())
 			}

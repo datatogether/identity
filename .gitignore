@@ -6,3 +6,4 @@ config.production.json
 config.json
 config.test.json
 config.develop.json
+identity

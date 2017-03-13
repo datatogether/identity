@@ -50,7 +50,10 @@ type config struct {
 	TLS bool `json:"TLS"`
 
 	// Key to store user's cookie under
-	UserCookieKey string `json:"user_cookie_key"`
+	UserCookieKey string `json:"USER_COOKIE_KEY"`
+
+	// support CORS signing from a list of origins
+	AllowedOrigins []string `json:"ALLOWED_ORIGINS"`
 
 	// setting HTTP_AUTH_USERNAME & HTTP_AUTH_PASSWORD
 	// will enable basic http auth for the server. This is a single
@@ -78,7 +81,9 @@ func initConfig(mode string) (cfg *config, err error) {
 	cfg.PublicKey = readEnvString("PUBLIC_KEY", cfg.PublicKey)
 	cfg.TLS = readEnvBool("TLS", cfg.TLS)
 	cfg.UrlRoot = readEnvString("SESSION_SECRET", cfg.SessionSecret)
+	cfg.UserCookieKey = readEnvString("USER_COOKIE_KEY", cfg.UserCookieKey)
 	cfg.PostgresDbUrl = readEnvString("POSTGRES_DB_URL", cfg.PostgresDbUrl)
+	cfg.AllowedOrigins = readEnvStringSlice("ALLOWED_ORIGINS", cfg.AllowedOrigins)
 	cfg.HttpAuthUsername = readEnvString("HTTP_AUTH_USERNAME", cfg.HttpAuthUsername)
 	cfg.HttpAuthPassword = readEnvString("HTTP_AUTH_PASSWORD", cfg.HttpAuthPassword)
 

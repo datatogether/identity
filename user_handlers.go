@@ -7,6 +7,8 @@ import (
 
 func UsersHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	case "OPTIONS":
+		CORSHandler(w, r)
 	case "GET":
 		ListUsersHandler(w, r)
 	case "POST":
@@ -45,12 +47,22 @@ func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 // Create a user from the api, feed password in as a query param
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	// sess := sessionUser(r)
-	u := NewUser("")
-	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+	// u := NewUser("")
+	params := struct {
+		Username string
+		Email    string
+		Password string
+	}{}
+	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
 		ErrRes(w, NewFmtError(http.StatusBadRequest, "error decoding json: %s", err.Error()))
 		return
 	}
-	u.password = r.FormValue("password")
+
+	u := &User{
+		Username: params.Username,
+		Email:    params.Email,
+		password: params.Password,
+	}
 
 	req := &CreateUserRequest{
 		Interface: httpApiInterface,
