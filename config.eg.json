@@ -1,0 +1,17 @@
+{
+  "URL_ROOT" : "",
+  "TLS" : false,
+  "AWS_REGION" : "us-east-1",
+  "AWS_S3_BUCKET_NAME" : "",
+  "AWS_S3_BUCKET_PATH" : "",
+  "PORT" : "3000",
+
+  "HTTP_AUTH_USERNAME" : "",
+  "HTTP_AUTH_PASSWORD" : "",
+
+  "POSTGRES_DB_URL" : "",
+
+  "template_data" : {
+    "title" : "Sentry"
+  }
+}
