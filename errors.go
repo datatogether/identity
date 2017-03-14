@@ -62,6 +62,7 @@ var (
 	ErrEmailRequired                = &Error{HttpCode: http.StatusBadRequest, Message: "Email is required"}
 	ErrEmailTaken                   = &Error{HttpCode: http.StatusBadRequest, Message: "Email already exists"}
 	ErrInvalidEmail                 = &Error{HttpCode: http.StatusBadRequest, Message: "Invalid Email"}
+	ErrInvalidKey                   = &Error{HttpCode: http.StatusBadRequest, Message: "Invalid Key"}
 	ErrInvalidName                  = &Error{HttpCode: http.StatusBadRequest, Message: "Invalid Name"}
 	ErrInvalidParent                = &Error{HttpCode: http.StatusBadRequest, Message: "Invalid Parent"}
 	ErrInvalidPassword              = &Error{HttpCode: http.StatusBadRequest, Message: "Invalid Password"}
