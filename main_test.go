@@ -38,7 +38,7 @@ func setupTestDatabase() func() {
 		logger.Panicln(err.Error())
 	}
 
-	if err := resetTestData(appDB, "users", "reset_tokens", "user_keys"); err != nil {
+	if err := resetTestData(appDB, "users", "reset_tokens", "keys"); err != nil {
 		logger.Panicln(err.Error())
 	}
 
@@ -61,7 +61,7 @@ func initializeAppSchema(db *sql.DB) (func(), error) {
 		"drop-all",
 		"create-users",
 		"create-reset_tokens",
-		"create-user_keys",
+		"create-keys",
 	} {
 		if _, err := schema.Exec(db, cmd); err != nil {
 			logger.Println(cmd, "error:", err)

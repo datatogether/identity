@@ -1,5 +1,5 @@
 -- name: drop-all
-DROP TABLE IF EXISTS user_keys, users, reset_tokens CASCADE;
+DROP TABLE IF EXISTS user_keys, keys, users, reset_tokens CASCADE;
 
 -- name: create-users
 CREATE TABLE users (
@@ -19,15 +19,16 @@ CREATE TABLE users (
 	deleted 					boolean DEFAULT false
 );
 
--- name: create-user_keys
-CREATE TABLE user_keys (
+-- name: create-keys
+CREATE TABLE keys (
 	type 							text NOT NULL,
 	sha_256 					bytea PRIMARY KEY,
 	created 					integer NOT NULL,
 	last_seen 				integer NOT NULL,
 	name 							text,
 	user_id 					UUID NOT NULL,
-	bytes 						bytea NOT NULL,
+	public_bytes 			bytea NOT NULL,
+	private_bytes 		bytea,
 	deleted 					boolean DEFAULT false
 );
 

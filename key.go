@@ -1,11 +1,13 @@
 package main
 
 import (
-	// "crypto/rand"
-	// "crypto/rsa"
+	"crypto/rand"
+	"crypto/rsa"
 	"crypto/sha256"
+	"crypto/x509"
 	"database/sql"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"time"
 
@@ -19,7 +21,8 @@ type Key struct {
 	LastSeen int64
 	Name     string
 	User     *User
-	bytes    []byte
+	Public   []byte
+	private  []byte
 }
 
 func (key *Key) MarshalJSON() ([]byte, error) {
@@ -47,7 +50,7 @@ func UserForPublicKey(db *sql.DB, pubKey ssh.PublicKey) (*User, error) {
 
 // TODO
 func (u *User) Keys(db *sql.DB) ([]*Key, error) {
-	rows, err := db.Query(fmt.Sprintf("select %s from keys where user_id= $1 and deleted = false", userKeyColumns()), u.Id)
+	rows, err := db.Query(fmt.Sprintf("select %s from keys where user_id= $1 and deleted = false", keyColumns()), u.Id)
 	if err != nil {
 		return nil, err
 	}
@@ -62,14 +65,10 @@ func (u *User) Keys(db *sql.DB) ([]*Key, error) {
 	return keys, nil
 }
 
-func userKeyColumns() string {
-	return "type, sha_256, created, last_seen, name, user_id, bytes"
-}
-
-// MakeSSHKeyPair make a pair of public and private keys for SSH access.
+// MakeKeyPair generates an
 // Public key is encoded in the format for inclusion in an OpenSSH authorized_keys file.
 // Private Key generated is PEM encoded
-// func MakeSSHKeyPair(pubKeyPath, privateKeyPath string) error {
+// func MakeKeyPair(pubKeyPath, privateKeyPath string) error {
 // 	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
 // 	if err != nil {
 // 		return err
@@ -94,41 +93,65 @@ func userKeyColumns() string {
 // 	return ioutil.WriteFile(pubKeyPath, ssh.MarshalAuthorizedKey(pub), 0655)
 // }
 
-func CreateKey(db *sql.DB, u *User, name string, publicKey []byte) (*Key, error) {
-
-	key, comment, _, _, err := ssh.ParseAuthorizedKey(publicKey)
+func NewKey(name string, u *User) (*Key, error) {
+	privateKey, err := rsa.GenerateKey(rand.Reader, 1024)
 	if err != nil {
-		return nil, ErrInvalidKey
-	}
-
-	if name == "" && comment != "" {
-		name = comment
-	}
-
-	pkBytes := key.Marshal()
-	k := &Key{
-		Type:     key.Type(),
-		User:     u,
-		Sha256:   sha256.Sum256(pkBytes),
-		Created:  time.Now().Unix(),
-		Name:     name,
-		LastSeen: 0,
-		bytes:    pkBytes,
-	}
-
-	if err := k.validate(db); err != nil {
 		return nil, err
 	}
 
-	if _, e := db.Exec("INSERT INTO keys VALUES ($1, $2, $3, $4, $5, $6, $7, false)", k.Type, k.Sha256[:], k.Created, k.LastSeen, k.Name, k.User.Id, k.bytes); e != nil {
-		return nil, NewFmtError(500, e.Error())
+	privateKeyPEM := &pem.Block{Type: "RSA PRIVATE KEY", Bytes: x509.MarshalPKCS1PrivateKey(privateKey)}
+
+	pub, err := ssh.NewPublicKey(&privateKey.PublicKey)
+	if err != nil {
+		return nil, err
 	}
 
-	return k, nil
+	return &Key{
+		Sha256:  sha256.Sum256(pub.Marshal()),
+		Type:    "ssh",
+		User:    u,
+		Name:    name,
+		Created: time.Now().Unix(),
+		Public:  pub.Marshal(),
+		private: pem.EncodeToMemory(privateKeyPEM),
+	}, nil
 }
 
+// func CreateKey(db *sql.DB, u *User, name string, publicKey []byte) (*Key, error) {
+
+// 	key, comment, _, _, err := ssh.ParseAuthorizedKey(publicKey)
+// 	if err != nil {
+// 		return nil, ErrInvalidKey
+// 	}
+
+// 	if name == "" && comment != "" {
+// 		name = comment
+// 	}
+
+// 	pkBytes := key.Marshal()
+// 	k := &Key{
+// 		Type:     key.Type(),
+// 		User:     u,
+// 		Sha256:   sha256.Sum256(pkBytes),
+// 		Created:  time.Now().Unix(),
+// 		Name:     name,
+// 		LastSeen: 0,
+// 		Public:   pkBytes,
+// 	}
+
+// 	if err := k.validate(db); err != nil {
+// 		return nil, err
+// 	}
+
+// 	if _, e := db.Exec("INSERT INTO keys VALUES ($1, $2, $3, $4, $5, $6, $7, &8, false)", k.Type, k.Sha256[:], k.Created, k.LastSeen, k.Name, k.User.Id, k.Public, k.private); e != nil {
+// 		return nil, NewFmtError(500, e.Error())
+// 	}
+
+// 	return k, nil
+// }
+
 func (key *Key) Read(db *sql.DB) error {
-	row := db.QueryRow(fmt.Sprintf("SELECT %s FROM keys WHERE sha_256=$1 AND deleted=false", userKeyColumns()), key.Sha256[:])
+	row := db.QueryRow(fmt.Sprintf("SELECT %s FROM keys WHERE sha_256=$1 AND deleted=false", keyColumns()), key.Sha256[:])
 	if err := key.UnmarshalSQL(row); err != nil {
 		if err == sql.ErrNoRows {
 			return ErrNotFound
@@ -139,12 +162,29 @@ func (key *Key) Read(db *sql.DB) error {
 	return nil
 }
 
-func (key *Key) Save(db *sql.DB) error {
-	if err := key.validate(db); err != nil {
+func (k *Key) Save(db *sql.DB) error {
+	if err := k.validate(db); err != nil {
 		return err
 	}
-	_, err := db.Exec("UPDATE keys SET last_seen = $2 WHERE sha_256 = $1 AND deleted = false", key.Sha256[:], key.LastSeen)
-	return err
+
+	prev := &Key{Sha256: k.Sha256}
+	if err := prev.Read(db); err != nil {
+		if err == ErrNotFound {
+			k.Created = time.Now().Unix()
+			if _, e := db.Exec("INSERT INTO keys VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)", k.Type, k.Sha256[:], k.Created, k.LastSeen, k.Name, k.User.Id, k.Public, k.private); e != nil {
+				logger.Println(e.Error())
+				return NewFmtError(500, e.Error())
+			}
+		} else {
+			logger.Println(err.Error())
+			return err
+		}
+	} else {
+		_, err := db.Exec("UPDATE keys SET last_seen = $2 WHERE sha_256 = $1 AND deleted = false", k.Sha256[:], k.LastSeen)
+		return err
+	}
+
+	return nil
 }
 
 // "delete" a user_key
@@ -172,17 +212,21 @@ func (key *Key) validate(db *sql.DB) error {
 	return nil
 }
 
+func keyColumns() string {
+	return "type, sha_256, created, last_seen, name, user_id, public_bytes, private_bytes"
+}
+
 // turn an sql row from the user table into a user struct pointer
 func (key *Key) UnmarshalSQL(row sqlScannable) error {
 	var (
-		keyType, name, userId string
-		created, lastSeen     int64
-		keySha, keyBytes      []byte
-		keySha256             = [32]byte{}
+		keyType, name, userId             string
+		created, lastSeen                 int64
+		keySha, publicBytes, privateBytes []byte
+		keySha256                         = [32]byte{}
 	)
 
-	// "type, key_sha, created, last_seen, name, user_id, bytes"
-	if err := row.Scan(&keyType, &keySha, &created, &lastSeen, &name, &userId, &keyBytes); err != nil {
+	// "type, key_sha, created, last_seen, name, user_id, public_bytes, private_bytes"
+	if err := row.Scan(&keyType, &keySha, &created, &lastSeen, &name, &userId, &publicBytes, &privateBytes); err != nil {
 		return err
 	}
 
@@ -197,7 +241,8 @@ func (key *Key) UnmarshalSQL(row sqlScannable) error {
 		LastSeen: lastSeen,
 		Name:     name,
 		User:     NewUserFromString(userId),
-		bytes:    keyBytes,
+		Public:   publicBytes,
+		private:  privateBytes,
 	}
 
 	return nil

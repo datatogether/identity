@@ -11,14 +11,14 @@ INSERT INTO users VALUES
 INSERT INTO reset_tokens VALUES
   ('69eb9cbd-7085-4624-a841-59d0f02eaa7b', 1464282748, 1464282748, 'test_user_brendan@qri.io', false);
 
--- name: insert-user_keys
-INSERT INTO user_keys VALUES
-  -- type, sha_256, created, last_seen, name, user_id, bytes, deleted
-  ('rsa', '\x',1464282748,1464282748,'stuff','61e91231-c7cc-47b4-b392-89fb180a7570', '\x', false);
+-- name: insert-keys
+INSERT INTO keys VALUES
+  -- type, sha_256, created, last_seen, name, user_id, public_bytes, private_bytes, deleted
+  ('rsa', '\x',1464282748,1464282748,'stuff','61e91231-c7cc-47b4-b392-89fb180a7570', '\x', '\x', false);
 
 -- name: delete-users
 delete from users;
 -- name: delete-reset_tokens
 delete from reset_tokens;
--- name: delete-user_keys
-delete from user_keys;
+-- name: delete-keys
+delete from keys;

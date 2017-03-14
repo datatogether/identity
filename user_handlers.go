@@ -47,21 +47,28 @@ func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 // Create a user from the api, feed password in as a query param
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	// sess := sessionUser(r)
-	// u := NewUser("")
-	params := struct {
-		Username string
-		Email    string
-		Password string
-	}{}
-	if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
-		ErrRes(w, NewFmtError(http.StatusBadRequest, "error decoding json: %s", err.Error()))
-		return
-	}
+	u := NewUser("")
 
-	u := &User{
-		Username: params.Username,
-		Email:    params.Email,
-		password: params.Password,
+	if r.Header.Get("Content-Type") == "application/json" {
+		params := struct {
+			Username string
+			Email    string
+			Password string
+		}{}
+		if err := json.NewDecoder(r.Body).Decode(&params); err != nil {
+			ErrRes(w, NewFmtError(http.StatusBadRequest, "error decoding json: %s", err.Error()))
+			return
+		}
+		u = &User{
+			Username: params.Username,
+			Email:    params.Email,
+			password: params.Password,
+		}
+	} else {
+		// default to form data values
+		u.Username = r.FormValue("username")
+		u.Email = r.FormValue("email")
+		u.password = r.FormValue("password")
 	}
 
 	req := &CreateUserRequest{

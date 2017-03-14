@@ -166,6 +166,7 @@ func (u *User) Save(db *sql.DB) error {
 			u.Created = time.Now().Unix()
 			u.Updated = u.Created
 
+			// create access token
 			token, e := NewAccessToken(db)
 			if e != nil {
 				return Error500IfErr(e)
@@ -174,6 +175,19 @@ func (u *User) Save(db *sql.DB) error {
 
 			if _, e = db.Exec("INSERT INTO users VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, false, $12, false)", u.Id, u.Created, u.Updated, u.Username, u.Type, hash, u.Email, u.Name, u.Description, u.HomeUrl, u.emailConfirmed, u.accessToken); e != nil {
 				return NewFmtError(500, e.Error())
+			}
+
+			logger.Println("creating default key")
+			// create default keypair using newly-minted user
+			key, err := NewKey("default key", u)
+			if err != nil {
+				logger.Println(err.Error())
+				return err
+			}
+
+			if err = key.Save(db); err != nil {
+				logger.Println(err.Error())
+				return err
 			}
 
 			return nil
@@ -353,6 +367,10 @@ func CreateUser(db *sql.DB, username, email, name, password string, t UserType) 
 	}
 
 	err = u.Save(db)
+	if err != nil {
+		return nil, err
+	}
+
 	return
 }
 

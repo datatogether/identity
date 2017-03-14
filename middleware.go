@@ -1,6 +1,7 @@
 package main
 
 import (
+	"context"
 	"crypto/subtle"
 	"fmt"
 	"net/http"
@@ -20,7 +21,13 @@ func middleware(handler http.HandlerFunc) http.HandlerFunc {
 		// 	w.Header().Add("Strict-Transport-Security", "max-age=604800")
 		// }
 		addCORSHeaders(w, r)
-		handler(w, r)
+
+		ctx := r.Context()
+		u, _ := userFromRequest(appDB, r)
+		if u != nil {
+			ctx = context.WithValue(ctx, "user", u)
+		}
+		handler(w, r.WithContext(ctx))
 	}
 }
 
@@ -45,7 +52,13 @@ func authMiddleware(handler http.HandlerFunc) http.HandlerFunc {
 			// 	w.Header().Add("Strict-Transport-Security", "max-age=604800")
 			// }
 			addCORSHeaders(w, r)
-			handler(w, r)
+
+			ctx := r.Context()
+			u, _ := userFromRequest(appDB, r)
+			if u != nil {
+				ctx = context.WithValue(ctx, "user", u)
+			}
+			handler(w, r.WithContext(ctx))
 		}
 	}
 
