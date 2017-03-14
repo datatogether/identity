@@ -122,9 +122,16 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		Username string
 		Password string
 	}
-	if err := json.NewDecoder(r.Body).Decode(&login); err != nil {
-		ErrRes(w, NewFmtError(http.StatusBadRequest, "error parsing json: '%s'", err.Error()))
-		return
+
+	if isJsonRequest(r) {
+		if err := json.NewDecoder(r.Body).Decode(&login); err != nil {
+			ErrRes(w, NewFmtError(http.StatusBadRequest, "error parsing json: '%s'", err.Error()))
+			return
+		}
+	} else {
+		// default to using form values
+		login.Username = r.FormValue("username")
+		login.Password = r.FormValue("password")
 	}
 
 	u, err := AuthenticateUser(appDB, login.Username, login.Password)

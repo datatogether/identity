@@ -1,82 +1,104 @@
 package main
 
-// import (
-// 	"encoding/hex"
-// 	"encoding/json"
-// 	"net/http"
-// )
+import (
+	// "encoding/hex"
+	"encoding/json"
+	"fmt"
+	"net/http"
+)
 
-// func CreateUserKeyHandler(w http.ResponseWriter, r *http.Request) {
-// 	u := sessionUser(ctx)
-// 	if u == nil {
-// 		ErrRes(w, ErrNotFound)
-// 		return
-// 	}
+func KeysHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "GET":
+		UserKeysHandler(w, r)
+	case "POST":
+		CreateUserKeyHandler(w, r)
+	case "DELETE":
+		DeleteUserKeyHandler(w, r)
+	default:
+		ErrRes(w, ErrNotFound)
+	}
+}
 
-// 	req := struct {
-// 		Name string
-// 		Key  string
-// 	}{}
+func CreateUserKeyHandler(w http.ResponseWriter, r *http.Request) {
+	u := sessionUser(r)
+	if u == nil {
+		ErrRes(w, ErrNotFound)
+		return
+	}
 
-// 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-// 		logger.Println(err)
-// 		ErrRes(w, err)
-// 		return
-// 	}
+	req := struct {
+		Name string
+		Key  string
+	}{}
 
-// 	key, err := CreateUserKey(appDB, u, req.Name, []byte(req.Key))
-// 	if err != nil {
-// 		logger.Println(err)
-// 		ErrRes(w, err)
-// 		return
-// 	}
+	if isJsonRequest(r) {
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			logger.Println(err)
+			ErrRes(w, err)
+			return
+		}
+	} else {
+		req.Name = r.FormValue("name")
+		req.Key = r.FormValue("key")
+	}
 
-// 	ApiRes(w, key)
-// }
+	key, err := CreateKey(appDB, u, req.Name, []byte(req.Key))
+	if err != nil {
+		logger.Println(err)
+		ErrRes(w, err)
+		return
+	}
 
-// func UserKeysHandler(w http.ResponseWriter, r *http.Request) {
-// 	u := sessionUser(ctx)
-// 	if u == nil {
-// 		ErrRes(w, ErrNotFound)
-// 		return
-// 	}
+	Res(w, key)
+}
 
-// 	keys, err := u.Keys(appDB)
-// 	if err != nil {
-// 		logger.Println(err)
-// 		ErrRes(w, err)
-// 		return
-// 	}
+func UserKeysHandler(w http.ResponseWriter, r *http.Request) {
+	u := sessionUser(r)
+	if u == nil {
+		ErrRes(w, ErrNotFound)
+		return
+	}
 
-// 	ApiRes(w, keys)
-// }
+	keys, err := u.Keys(appDB)
+	if err != nil {
+		logger.Println(err)
+		ErrRes(w, err)
+		return
+	}
 
-// func DeleteUserKeyHandler(w http.ResponseWriter, r *http.Request) {
-// 	u := sessionUser(ctx)
-// 	if u == nil {
-// 		ErrRes(w, ErrNotFound)
-// 		return
-// 	}
+	Res(w, keys)
+}
 
-// 	shaStr := stringParam(ctx, "id")
-// 	sha256 := [32]byte{}
-// 	sha, err := hex.DecodeString(shaStr)
-// 	if err != nil {
-// 		ErrRes(w, ErrNotFound)
-// 		return
-// 	}
-// 	for i, b := range sha {
-// 		sha256[i] = byte(b)
-// 	}
+func DeleteUserKeyHandler(w http.ResponseWriter, r *http.Request) {
+	u := sessionUser(r)
+	if u == nil {
+		ErrRes(w, ErrNotFound)
+		return
+	}
 
-// 	logger.Println(shaStr, sha256)
-// 	key := &UserKey{Sha256: sha256}
-// 	if err := key.Delete(appDB); err != nil {
-// 		logger.Println(err)
-// 		ErrRes(w, err)
-// 		return
-// 	}
+	// TODO - finish
+	ErrRes(w, fmt.Errorf("deleting keys is not yet implemented"))
+	return
 
-// 	ApiRes(w, key)
+	// shaStr := stringParam(ctx, "id")
+	// sha256 := [32]byte{}
+	// sha, err := hex.DecodeString(shaStr)
+	// if err != nil {
+	// 	ErrRes(w, ErrNotFound)
+	// 	return
+	// }
+	// for i, b := range sha {
+	// 	sha256[i] = byte(b)
+	// }
 
-// }
+	// logger.Println(shaStr, sha256)
+	// key := &UserKey{Sha256: sha256}
+	// if err := key.Delete(appDB); err != nil {
+	// 	logger.Println(err)
+	// 	ErrRes(w, err)
+	// 	return
+	// }
+
+	// Res(w, key)
+}

@@ -42,6 +42,7 @@ func Res(w http.ResponseWriter, data interface{}) error {
 	}
 
 	w.WriteHeader(http.StatusOK)
+	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(res)
 	if err != nil {
 		logger.Println(err)

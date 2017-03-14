@@ -49,7 +49,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	// sess := sessionUser(r)
 	u := NewUser("")
 
-	if r.Header.Get("Content-Type") == "application/json" {
+	if isJsonRequest(r) {
 		params := struct {
 			Username string
 			Email    string

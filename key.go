@@ -117,38 +117,37 @@ func NewKey(name string, u *User) (*Key, error) {
 	}, nil
 }
 
-// func CreateKey(db *sql.DB, u *User, name string, publicKey []byte) (*Key, error) {
+func CreateKey(db *sql.DB, u *User, name string, publicKey []byte) (*Key, error) {
+	key, comment, _, _, err := ssh.ParseAuthorizedKey(publicKey)
+	if err != nil {
+		return nil, ErrInvalidKey
+	}
 
-// 	key, comment, _, _, err := ssh.ParseAuthorizedKey(publicKey)
-// 	if err != nil {
-// 		return nil, ErrInvalidKey
-// 	}
+	if name == "" && comment != "" {
+		name = comment
+	}
 
-// 	if name == "" && comment != "" {
-// 		name = comment
-// 	}
+	pkBytes := key.Marshal()
+	k := &Key{
+		Type:     key.Type(),
+		User:     u,
+		Sha256:   sha256.Sum256(pkBytes),
+		Created:  time.Now().Unix(),
+		Name:     name,
+		LastSeen: 0,
+		Public:   pkBytes,
+	}
 
-// 	pkBytes := key.Marshal()
-// 	k := &Key{
-// 		Type:     key.Type(),
-// 		User:     u,
-// 		Sha256:   sha256.Sum256(pkBytes),
-// 		Created:  time.Now().Unix(),
-// 		Name:     name,
-// 		LastSeen: 0,
-// 		Public:   pkBytes,
-// 	}
+	if err := k.validate(db); err != nil {
+		return nil, err
+	}
 
-// 	if err := k.validate(db); err != nil {
-// 		return nil, err
-// 	}
+	if _, e := db.Exec("INSERT INTO keys VALUES ($1, $2, $3, $4, $5, $6, $7, null, false)", k.Type, k.Sha256[:], k.Created, k.LastSeen, k.Name, k.User.Id, k.Public); e != nil {
+		return nil, NewFmtError(500, e.Error())
+	}
 
-// 	if _, e := db.Exec("INSERT INTO keys VALUES ($1, $2, $3, $4, $5, $6, $7, &8, false)", k.Type, k.Sha256[:], k.Created, k.LastSeen, k.Name, k.User.Id, k.Public, k.private); e != nil {
-// 		return nil, NewFmtError(500, e.Error())
-// 	}
-
-// 	return k, nil
-// }
+	return k, nil
+}
 
 func (key *Key) Read(db *sql.DB) error {
 	row := db.QueryRow(fmt.Sprintf("SELECT %s FROM keys WHERE sha_256=$1 AND deleted=false", keyColumns()), key.Sha256[:])

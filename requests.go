@@ -23,6 +23,11 @@ func ExecRequest(w http.ResponseWriter, req Request) {
 	}
 }
 
+func isJsonRequest(r *http.Request) bool {
+	// TODO - make this more robust
+	return r.Header.Get("Content-Type") == "application/json"
+}
+
 // get a boolean query value from an http request
 func reqParamBool(key string, r *http.Request) (bool, error) {
 	str := r.FormValue(key)

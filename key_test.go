@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	"testing"
+	// "testing"
 )
 
 func CompareKeys(a, b *Key) error {

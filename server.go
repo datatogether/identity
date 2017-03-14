@@ -47,7 +47,7 @@ func main() {
 
 	m.Handle("/", middleware(HealthCheckHandler))
 	m.Handle("/session", middleware(SessionHandler))
-	// m.Handle("/session/keys", middleware(SessionKeysHandler))
+	m.Handle("/session/keys", middleware(KeysHandler))
 
 	m.Handle("/users", middleware(UsersHandler))
 	// m.Handle("/users/", middleware(UserHandler))
