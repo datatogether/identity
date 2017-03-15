@@ -9,6 +9,8 @@ import (
 
 func KeysHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
+	case "OPTIONS":
+		CORSHandler(w, r)
 	case "GET":
 		UserKeysHandler(w, r)
 	case "POST":

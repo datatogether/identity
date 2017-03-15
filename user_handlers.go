@@ -76,7 +76,19 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		User:      u,
 	}
 
-	ExecRequest(w, req)
+	_, err := req.Exec()
+	if err != nil {
+		ErrRes(w, err)
+		return
+	}
+
+	// log new user in
+	if err := setUserSessionCookie(w, r, u.Id); err != nil {
+		ErrRes(w, New500Error(err.Error()))
+		return
+	}
+
+	Res(w, u)
 }
 
 // confirm a user's email address
@@ -98,21 +110,25 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 // }
 
 // SaveUserHandler updates a user
-// func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
-// 	u := &User{}
-// 	if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
-// 		ErrRes(w, NewFmtError(http.StatusBadRequest, err.Error()))
-// 		return
-// 	}
+func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
+	u := &User{}
+	if isJsonRequest(r) {
+		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
+			ErrRes(w, NewFmtError(http.StatusBadRequest, err.Error()))
+			return
+		}
+	} else {
+		// TODO - fill user out from form values
+	}
 
-// 	req := &SaveUserRequest{
-// 		// Interface: httpApiInterface,
-// 		User:    sessionUser(ctx),
-// 		Subject: u,
-// 	}
+	req := &SaveUserRequest{
+		// Interface: httpApiInterface,
+		User:    sessionUser(r),
+		Subject: u,
+	}
 
-// 	ExecRequest(w, req)
-// }
+	ExecRequest(w, req)
+}
 
 // delete a user
 // func DeleteCurrentUserHandler(w http.ResponseWriter, r *http.Request) {

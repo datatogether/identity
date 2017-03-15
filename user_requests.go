@@ -46,10 +46,11 @@ type SaveUserRequest struct {
 }
 
 func (r *SaveUserRequest) Exec() (interface{}, error) {
-	if !r.User.isAdmin || r.User.Id != r.Subject.Id {
+	if !r.User.isAdmin && r.User.Id != r.Subject.Id {
 		return nil, ErrAccessDenied
 	}
 
+	logger.Println(r.User.Id, r.Subject.Id, r.User.Id == r.Subject.Id)
 	if err := r.Subject.Save(appDB); err != nil {
 		return nil, err
 	}

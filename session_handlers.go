@@ -98,6 +98,8 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 		CORSHandler(w, r)
 	case "GET":
 		GetSessionHandler(w, r)
+	case "PUT":
+		SaveUserHandler(w, r)
 	case "POST":
 		LoginHandler(w, r)
 	case "DELETE":
