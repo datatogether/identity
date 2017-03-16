@@ -42,7 +42,7 @@ type config struct {
 	// secret for encrypted session cookies. required.
 	SessionSecret string `json:"SESSION_SECRET"`
 
-	// Public Key to use for signing metablocks. required.
+	// Public Key to use for signing. Not yet used, but required soon.
 	PublicKey string `json:"PUBLIC_KEY"`
 
 	// TLS (HTTPS) enable support via LetsEncrypt, default false
