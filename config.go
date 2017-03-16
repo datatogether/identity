@@ -63,6 +63,10 @@ type config struct {
 	HttpAuthUsername string `json:"HTTP_AUTH_USERNAME"`
 	// read from env variable: HTTP_AUTH_PASSWORD
 	HttpAuthPassword string `json:"HTTP_AUTH_PASSWORD"`
+
+	// CertbotResponse is only for doing manual SSL certificate generation
+	// via LetsEncrypt.
+	CertbotResponse string `json:"CERTBOT_RESPONSE"`
 }
 
 // initConfig pulls configuration from config.json
@@ -86,6 +90,7 @@ func initConfig(mode string) (cfg *config, err error) {
 	cfg.AllowedOrigins = readEnvStringSlice("ALLOWED_ORIGINS", cfg.AllowedOrigins)
 	cfg.HttpAuthUsername = readEnvString("HTTP_AUTH_USERNAME", cfg.HttpAuthUsername)
 	cfg.HttpAuthPassword = readEnvString("HTTP_AUTH_PASSWORD", cfg.HttpAuthPassword)
+	cfg.CertbotResponse = readEnvString("CERTBOT_RESPONSE", cfg.CertbotResponse)
 
 	// make sure port is set
 	if cfg.Port == "" {

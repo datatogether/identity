@@ -45,10 +45,10 @@ func main() {
 	s := &http.Server{}
 	m := http.NewServeMux()
 
+	m.HandleFunc("/.well-known/acme-challenge/", CertbotHandler)
 	m.Handle("/", middleware(HealthCheckHandler))
 	m.Handle("/session", middleware(SessionHandler))
 	m.Handle("/session/keys", middleware(KeysHandler))
-
 	m.Handle("/users", middleware(UsersHandler))
 	// m.Handle("/users/", middleware(UserHandler))
 

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"io"
 	"net/http"
 )
 
@@ -16,4 +17,9 @@ func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 // headers set in addCorsHeaders
 func CORSHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
+}
+
+// CertbotHandler pipes the certbot response for manual certificate generation
+func CertbotHandler(w http.ResponseWriter, r *http.Request) {
+	io.WriteString(w, cfg.CertbotResponse)
 }
