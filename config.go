@@ -64,6 +64,9 @@ type config struct {
 	// read from env variable: HTTP_AUTH_PASSWORD
 	HttpAuthPassword string `json:"HTTP_AUTH_PASSWORD"`
 
+	// if true, requests that have X-Forwarded-Proto: http will be redirected
+	// to their https variant
+	ProxyForceHttps bool
 	// CertbotResponse is only for doing manual SSL certificate generation
 	// via LetsEncrypt.
 	CertbotResponse string `json:"CERTBOT_RESPONSE"`

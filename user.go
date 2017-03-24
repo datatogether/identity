@@ -22,6 +22,7 @@ type User struct {
 	Name           string `json:"name" sql:"name"`
 	Description    string `json:"description" sql:"description"`
 	HomeUrl        string `json:"home_url" sql:"home_url"`
+	CurrentKey     string `json:"currentKey"`
 	emailConfirmed bool   `sql:"email_confirmed"`
 	isAdmin        bool   `sql:"is_admin"`
 	accessToken    string `sql:"access_token"`
@@ -47,7 +48,7 @@ func NewUserFromString(s string) *User {
 }
 
 func userColumns() string {
-	return "id, created, updated, username, type, name, description, home_url, email, email_confirmed, is_admin"
+	return "id, created, updated, username, type, name, description, home_url, email, current_key, email_confirmed, is_admin"
 }
 
 // _user is a private struct for marshaling & unmarshaling
@@ -146,6 +147,18 @@ func (u *User) AccessToken() string {
 	return u.accessToken
 }
 
+func (u *User) SetCurrentKey(db sqlQueryExecable, key string) error {
+	var userId string
+	if err := db.QueryRow("select userId from keys where sha_256 = $1", key).Scan(&userId); err != nil {
+		return err
+	}
+	if userId != u.Id {
+		return fmt.Errorf("user does not own this key")
+	}
+	_, err := db.Exec("update users set current_key = $2 where id = $1", u.Id, key)
+	return err
+}
+
 // save a user model, creating it if it doesn't exist
 // updating the user model if it doesn't
 func (u *User) Save(db *sql.DB) error {
@@ -190,7 +203,7 @@ func (u *User) Save(db *sql.DB) error {
 				return err
 			}
 
-			return nil
+			return u.SetCurrentKey(db, fmt.Sprintf("%x", key.Sha256))
 		}
 
 		return err
@@ -430,14 +443,14 @@ func (u *User) confirmEmailUrl() string {
 // turn an sql row from the user table into a user struct pointer
 func (u *User) UnmarshalSQL(row sqlScannable) error {
 	var (
-		id, username, name, email, description, homeUrl string
-		created, updated                                int64
-		emailConfirmed, isAdmin                         bool
-		t                                               UserType
+		id, username, name, email, description, homeUrl, key string
+		created, updated                                     int64
+		emailConfirmed, isAdmin                              bool
+		t                                                    UserType
 	)
 
 	// "id, created, updated, username, type, name, email, email_confirmed"
-	if err := row.Scan(&id, &created, &updated, &username, &t, &name, &description, &homeUrl, &email, &emailConfirmed, &isAdmin); err != nil {
+	if err := row.Scan(&id, &created, &updated, &username, &t, &name, &description, &homeUrl, &email, &key, &emailConfirmed, &isAdmin); err != nil {
 		return err
 	}
 	*u = User{
@@ -451,6 +464,7 @@ func (u *User) UnmarshalSQL(row sqlScannable) error {
 		emailConfirmed: emailConfirmed,
 		Description:    description,
 		isAdmin:        isAdmin,
+		CurrentKey:     key,
 	}
 
 	return nil

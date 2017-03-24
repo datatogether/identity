@@ -10,11 +10,12 @@ CREATE TABLE users (
 	type 							integer NOT NULL,
 	password_hash 		bytea NOT NULL,
 	email 						text UNIQUE NOT NULL,
-	name 							text,
-	description 			text,
-	home_url 					text,
+	name 							text default '',
+	description 			text default '',
+	home_url 					text default '',
 	email_confirmed 	boolean DEFAULT false,
 	is_admin 					boolean DEFAULT false,
+	current_key       text UNIQUE NOT NULL,
 	access_token 			text UNIQUE NOT NULL,
 	deleted 					boolean DEFAULT false
 );
