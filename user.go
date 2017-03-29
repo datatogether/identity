@@ -147,15 +147,15 @@ func (u *User) AccessToken() string {
 	return u.accessToken
 }
 
-func (u *User) SetCurrentKey(db sqlQueryExecable, key string) error {
+func (u *User) SetCurrentKey(db sqlQueryExecable, key [32]byte) error {
 	var userId string
-	if err := db.QueryRow("select userId from keys where sha_256 = $1", key).Scan(&userId); err != nil {
+	if err := db.QueryRow("select user_id from keys where sha_256 = $1", key[:]).Scan(&userId); err != nil {
 		return err
 	}
 	if userId != u.Id {
 		return fmt.Errorf("user does not own this key")
 	}
-	_, err := db.Exec("update users set current_key = $2 where id = $1", u.Id, key)
+	_, err := db.Exec("update users set current_key = $2 where id = $1", u.Id, fmt.Sprintf("%x", key))
 	return err
 }
 
@@ -190,7 +190,6 @@ func (u *User) Save(db *sql.DB) error {
 				return NewFmtError(500, e.Error())
 			}
 
-			logger.Println("creating default key")
 			// create default keypair using newly-minted user
 			key, err := NewKey("default key", u)
 			if err != nil {
@@ -203,7 +202,7 @@ func (u *User) Save(db *sql.DB) error {
 				return err
 			}
 
-			return u.SetCurrentKey(db, fmt.Sprintf("%x", key.Sha256))
+			return u.SetCurrentKey(db, key.Sha256)
 		}
 
 		return err

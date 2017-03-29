@@ -15,7 +15,7 @@ CREATE TABLE users (
 	home_url 					text default '',
 	email_confirmed 	boolean DEFAULT false,
 	is_admin 					boolean DEFAULT false,
-	current_key       text UNIQUE NOT NULL,
+	current_key       text NOT NULL default '',
 	access_token 			text UNIQUE NOT NULL,
 	deleted 					boolean DEFAULT false
 );
