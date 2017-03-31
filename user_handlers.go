@@ -18,6 +18,28 @@ func UsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func UserHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "OPTIONS":
+		CORSHandler(w, r)
+	case "GET":
+		SingleUserHandler(w, r)
+	default:
+		ErrRes(w, ErrNotFound)
+	}
+}
+
+func SingleUserHandler(w http.ResponseWriter, r *http.Request) {
+	req := &UserRequest{
+		Subject: &User{
+			Id:          r.FormValue("id"),
+			Username:    r.FormValue("username"),
+			accessToken: r.FormValue("access_token"),
+		},
+	}
+	ExecRequest(w, req)
+}
+
 // list users or get a single user if supplied with a "username" formValue
 func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var req Request

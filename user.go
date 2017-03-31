@@ -12,21 +12,38 @@ import (
 
 // le user
 type User struct {
-	Id             string   `json:"id" sql:"id"`
-	Created        int64    `json:"created" sql:"created"`
-	Updated        int64    `json:"updated" sql:"updated"`
-	Username       string   `json:"username" sql:"username"`
-	Type           UserType `json:"type" sql:"type"`
-	password       string
-	Email          string `json:"email" sql:"email"`
-	Name           string `json:"name" sql:"name"`
-	Description    string `json:"description" sql:"description"`
-	HomeUrl        string `json:"home_url" sql:"home_url"`
-	CurrentKey     string `json:"currentKey"`
-	emailConfirmed bool   `sql:"email_confirmed"`
-	isAdmin        bool   `sql:"is_admin"`
-	accessToken    string `sql:"access_token"`
-	anonymous      bool
+	// version 4 uuid
+	Id string `json:"id" sql:"id"`
+	// Created timestamp rounded to seconds in UTC
+	Created int64 `json:"created" sql:"created"`
+	// Updated timestamp rounded to seconds in UTC
+	Updated int64 `json:"updated" sql:"updated"`
+	// handle for the user. min 1 character, max 80. composed of [_,-,a-z,A-Z,1-9]
+	Username string `json:"username" sql:"username"`
+	// specifies weather this is a user or an organization
+	Type UserType `json:"type" sql:"type"`
+	// password, only really used on account creation
+	password string
+	// user's email address
+	Email string `json:"email" sql:"email"`
+	// user name field. could be first[space]last, but not strictly enforced
+	Name string `json:"name" sql:"name"`
+	// user-filled description of self
+	Description string `json:"description" sql:"description"`
+	// url this user wants the world to click
+	HomeUrl string `json:"home_url" sql:"home_url"`
+	// sh256 multihash of public key that this user is currently using for signatures
+	CurrentKey string `json:"currentKey"`
+	// have we ever successfully sent this user an email?
+	emailConfirmed bool `sql:"email_confirmed"`
+	// lol we need to think about permissions
+	isAdmin bool `sql:"is_admin"`
+	// auto-generated api access token
+	accessToken string `sql:"access_token"`
+	// often users get auto-generated based on IP for rate lmiting & stuff
+	// this flag tracks that.
+	// TODO - for this to be useful it'll need to be Exported
+	anonymous bool
 }
 
 // create a new user struct pointer from a provided id string

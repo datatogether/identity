@@ -34,16 +34,16 @@ func ErrRes(w http.ResponseWriter, e error) error {
 }
 
 func Res(w http.ResponseWriter, data interface{}) error {
-	res := map[string]interface{}{
-		"meta": map[string]interface{}{
-			"code": http.StatusOK,
-		},
-		"data": data,
-	}
+	// res := map[string]interface{}{
+	// 	"meta": map[string]interface{}{
+	// 		"code": http.StatusOK,
+	// 	},
+	// 	"data": data,
+	// }
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")
-	err := json.NewEncoder(w).Encode(res)
+	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
 		logger.Println(err)
 	}

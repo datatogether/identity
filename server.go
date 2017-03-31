@@ -50,7 +50,7 @@ func main() {
 	m.Handle("/session", middleware(SessionHandler))
 	m.Handle("/session/keys", middleware(KeysHandler))
 	m.Handle("/users", middleware(UsersHandler))
-	// m.Handle("/users/", middleware(UserHandler))
+	m.Handle("/users/", middleware(UserHandler))
 
 	// m.Handle("/reset", middleware(ResetPasswordHandler))
 	// m.Handle("/reset/", middleware(ResetPasswordHandler))
