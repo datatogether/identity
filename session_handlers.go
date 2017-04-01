@@ -111,11 +111,12 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 
 func GetSessionHandler(w http.ResponseWriter, r *http.Request) {
 	u := sessionUser(r)
+	envelope := r.FormValue("envelope") != "false"
 	if u == nil || u.Id == "" {
 		w.WriteHeader(http.StatusNoContent)
 		w.Write([]byte("{}"))
 	} else {
-		Res(w, u)
+		Res(w, envelope, u)
 	}
 }
 
@@ -148,7 +149,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Res(w, u)
+	Res(w, true, u)
 }
 
 // logout a user, overwriting their session cookie with ""

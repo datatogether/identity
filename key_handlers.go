@@ -52,7 +52,7 @@ func CreateUserKeyHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Res(w, key)
+	Res(w, true, key)
 }
 
 func UserKeysHandler(w http.ResponseWriter, r *http.Request) {
@@ -69,7 +69,7 @@ func UserKeysHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Res(w, keys)
+	Res(w, true, keys)
 }
 
 func DeleteUserKeyHandler(w http.ResponseWriter, r *http.Request) {

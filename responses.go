@@ -33,13 +33,15 @@ func ErrRes(w http.ResponseWriter, e error) error {
 	}
 }
 
-func Res(w http.ResponseWriter, data interface{}) error {
-	// res := map[string]interface{}{
-	// 	"meta": map[string]interface{}{
-	// 		"code": http.StatusOK,
-	// 	},
-	// 	"data": data,
-	// }
+func Res(w http.ResponseWriter, envelope bool, data interface{}) error {
+	if envelope {
+		data = map[string]interface{}{
+			"meta": map[string]interface{}{
+				"code": http.StatusOK,
+			},
+			"data": data,
+		}
+	}
 
 	w.WriteHeader(http.StatusOK)
 	w.Header().Set("Content-Type", "application/json")

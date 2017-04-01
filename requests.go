@@ -15,11 +15,11 @@ type Request interface {
 	Exec() (interface{}, error)
 }
 
-func ExecRequest(w http.ResponseWriter, req Request) {
+func ExecRequest(w http.ResponseWriter, envelope bool, req Request) {
 	if res, err := req.Exec(); err != nil {
 		ErrRes(w, err)
 	} else {
-		Res(w, res)
+		Res(w, envelope, res)
 	}
 }
 

@@ -30,6 +30,7 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SingleUserHandler(w http.ResponseWriter, r *http.Request) {
+	envelope := r.FormValue("envelope") != "false"
 	req := &UserRequest{
 		Subject: &User{
 			Id:          r.FormValue("id"),
@@ -37,12 +38,13 @@ func SingleUserHandler(w http.ResponseWriter, r *http.Request) {
 			accessToken: r.FormValue("access_token"),
 		},
 	}
-	ExecRequest(w, req)
+	ExecRequest(w, envelope, req)
 }
 
 // list users or get a single user if supplied with a "username" formValue
 func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 	var req Request
+	envelope := r.FormValue("envelope") != "false"
 	username := r.FormValue("username")
 	id := r.FormValue("id")
 
@@ -63,7 +65,7 @@ func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	ExecRequest(w, req)
+	ExecRequest(w, envelope, req)
 }
 
 // Create a user from the api, feed password in as a query param
@@ -110,7 +112,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Res(w, u)
+	Res(w, true, u)
 }
 
 // confirm a user's email address
@@ -149,7 +151,7 @@ func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
 		Subject: u,
 	}
 
-	ExecRequest(w, req)
+	ExecRequest(w, true, req)
 }
 
 // delete a user
