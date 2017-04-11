@@ -485,3 +485,14 @@ func (u *User) UnmarshalSQL(row sqlScannable) error {
 
 	return nil
 }
+
+func (u *User) AcceptGroupInvite(db *sql.DB, g *Group) error {
+	t := time.Now().Round(time.Second).In(time.UTC)
+	_, err := db.Exec(qUserAcceptGroupInvite, g.Id, u.Id, t)
+	return err
+}
+
+func (u *User) DeclineGroupInvite(db *sql.DB, g *Group) error {
+	_, err := db.Exec(qGroupRemoveUser, g.Id, u.Id)
+	return err
+}

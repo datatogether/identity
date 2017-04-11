@@ -49,8 +49,12 @@ func main() {
 	m.Handle("/", middleware(HealthCheckHandler))
 	m.Handle("/session", middleware(SessionHandler))
 	m.Handle("/session/keys", middleware(KeysHandler))
+	// m.Handle("/session/groups", handler)
 	m.Handle("/users", middleware(UsersHandler))
 	m.Handle("/users/", middleware(UserHandler))
+
+	m.Handle("/groups", middleware(GroupsHandler))
+	m.Handle("/groups/", middleware(GroupHandler))
 
 	// m.Handle("/reset", middleware(ResetPasswordHandler))
 	// m.Handle("/reset/", middleware(ResetPasswordHandler))
