@@ -50,6 +50,7 @@ func main() {
 	m.Handle("/session", middleware(SessionHandler))
 	m.Handle("/session/keys", middleware(KeysHandler))
 	// m.Handle("/session/groups", handler)
+	m.Handle("/search", middleware(UsersSearchHandler))
 	m.Handle("/users", middleware(UsersHandler))
 	m.Handle("/users/", middleware(UserHandler))
 

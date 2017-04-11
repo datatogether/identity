@@ -154,6 +154,16 @@ func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
 	ExecRequest(w, true, req)
 }
 
+func UsersSearchHandler(w http.ResponseWriter, r *http.Request) {
+	req := &UsersSearchRequest{
+		User:  sessionUser(r),
+		Query: r.FormValue("q"),
+		Page:  PageFromRequest(r),
+	}
+
+	ExecRequest(w, true, req)
+}
+
 // delete a user
 // func DeleteCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
 // 	u := sessionUser(ctx)

@@ -57,3 +57,14 @@ func (r *SaveUserRequest) Exec() (interface{}, error) {
 
 	return r.Subject, nil
 }
+
+type UsersSearchRequest struct {
+	Interface string
+	User      *User
+	Query     string
+	Page
+}
+
+func (r *UsersSearchRequest) Exec() (interface{}, error) {
+	return UsersSearch(appDB, r.Query, r.Page.Size, r.Page.Offset())
+}

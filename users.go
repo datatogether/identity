@@ -37,3 +37,13 @@ func scanUsers(rows *sql.Rows) ([]*User, error) {
 
 	return us, nil
 }
+
+func UsersSearch(db *sql.DB, query string, limit, offset int) ([]*User, error) {
+	q := fmt.Sprintf("%%%s%%", query)
+	rows, err := db.Query(qUsersSearch, q, limit, offset)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+	return scanUsers(rows)
+}
