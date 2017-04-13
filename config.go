@@ -66,7 +66,7 @@ type config struct {
 
 	// if true, requests that have X-Forwarded-Proto: http will be redirected
 	// to their https variant
-	ProxyForceHttps bool
+	ProxyForceHttps bool `json:"PROXY_FORCE_HTTPS"`
 	// CertbotResponse is only for doing manual SSL certificate generation
 	// via LetsEncrypt.
 	CertbotResponse string `json:"CERTBOT_RESPONSE"`
@@ -94,6 +94,7 @@ func initConfig(mode string) (cfg *config, err error) {
 	cfg.HttpAuthUsername = readEnvString("HTTP_AUTH_USERNAME", cfg.HttpAuthUsername)
 	cfg.HttpAuthPassword = readEnvString("HTTP_AUTH_PASSWORD", cfg.HttpAuthPassword)
 	cfg.CertbotResponse = readEnvString("CERTBOT_RESPONSE", cfg.CertbotResponse)
+	cfg.ProxyForceHttps = readEnvString("PROXY_FORCE_HTTPS", cfg.ProxyForceHttps)
 
 	// make sure port is set
 	if cfg.Port == "" {
