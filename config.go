@@ -94,7 +94,7 @@ func initConfig(mode string) (cfg *config, err error) {
 	cfg.HttpAuthUsername = readEnvString("HTTP_AUTH_USERNAME", cfg.HttpAuthUsername)
 	cfg.HttpAuthPassword = readEnvString("HTTP_AUTH_PASSWORD", cfg.HttpAuthPassword)
 	cfg.CertbotResponse = readEnvString("CERTBOT_RESPONSE", cfg.CertbotResponse)
-	cfg.ProxyForceHttps = readEnvString("PROXY_FORCE_HTTPS", cfg.ProxyForceHttps)
+	cfg.ProxyForceHttps = readEnvBool("PROXY_FORCE_HTTPS", cfg.ProxyForceHttps)
 
 	// make sure port is set
 	if cfg.Port == "" {
