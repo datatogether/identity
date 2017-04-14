@@ -1,44 +1,72 @@
 package main
 
-// import (
-// 	"github.com/dgrijalva/jwt-go"
-// )
+import (
+	"crypto/rsa"
+	"database/sql"
+	"github.com/dgrijalva/jwt-go"
+	"github.com/dgrijalva/jwt-go/request"
+	"net/http"
+	"time"
+)
 
-// func createToken() {
-// 	// Create a new token object, specifying signing method and the claims
-// 	// you would like it to contain.
-// 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, jwt.MapClaims{
-// 		"foo": "bar",
-// 		"nbf": time.Date(2015, 10, 10, 12, 0, 0, 0, time.UTC).Unix(),
-// 	})
+var (
+	verifyKey *rsa.PublicKey
+	signKey   *rsa.PrivateKey
+)
 
-// 	// Sign and get the complete encoded token as a string using the secret
-// 	tokenString, err := token.SignedString(hmacSampleSecret)
+// ArchiversJWTClaims object
+type ArchiversClaims struct {
+	*jwt.StandardClaims
+	UserId   string `json:"userId"`
+	Username string `json:"username"`
+	UserType string `json:"userType"`
+}
 
-// 	fmt.Println(tokenString, err)
-// }
+func initKeys(cfg *config) (err error) {
+	signKey, err = jwt.ParseRSAPrivateKeyFromPEM([]byte(cfg.PrivateKey))
+	if err != nil {
+		return
+	}
+	verifyKey, err = jwt.ParseRSAPublicKeyFromPEM([]byte(cfg.PublicKey))
+	return
+}
 
-// func parseToken(token string) {
-// 	// sample token string taken from the New example
-// 	tokenString := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJmb28iOiJiYXIiLCJuYmYiOjE0NDQ0Nzg0MDB9.u1riaD1rW97opCoAuRCTy4w58Br-Zk-bh7vLiRIsrpU"
+func createToken(user *User) (string, error) {
+	// create a signer for rsa 256
+	t := jwt.New(jwt.GetSigningMethod("RS256"))
 
-// 	// Parse takes the token string and a function for looking up the key. The latter is especially
-// 	// useful if you use multiple keys for your application.  The standard is to use 'kid' in the
-// 	// head of the token to identify which key to use, but the parsed token (head and claims) is provided
-// 	// to the callback, providing flexibility.
-// 	token, err := jwt.Parse(tokenString, func(token *jwt.Token) (interface{}, error) {
-// 		// Don't forget to validate the alg is what you expect:
-// 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
-// 			return nil, fmt.Errorf("Unexpected signing method: %v", token.Header["alg"])
-// 		}
+	// set our claims
+	t.Claims = &ArchiversClaims{
+		&jwt.StandardClaims{
+			// set the expire time
+			// see http://tools.ietf.org/html/draft-ietf-oauth-json-web-token-20#section-4.1.4
+			ExpiresAt: time.Now().Add(time.Hour * 24 * 14).Unix(),
+		},
+		user.Id,
+		user.Username,
+		user.Type.String(),
+	}
 
-// 		// hmacSampleSecret is a []byte containing your secret, e.g. []byte("my_secret_key")
-// 		return hmacSampleSecret, nil
-// 	})
+	// Creat token string
+	return t.SignedString(signKey)
+}
 
-// 	if claims, ok := token.Claims.(jwt.MapClaims); ok && token.Valid {
-// 		fmt.Println(claims["foo"], claims["nbf"])
-// 	} else {
-// 		fmt.Println(err)
-// 	}
-// }
+func jwtUser(db *sql.DB, r *http.Request) (*User, error) {
+	// Get token from request
+	token, err := request.ParseFromRequestWithClaims(r, request.OAuth2Extractor, &ArchiversClaims{}, func(token *jwt.Token) (interface{}, error) {
+		// since we only use the one private key to sign the tokens,
+		// we also only use its public counter part to verify
+		return verifyKey, nil
+	})
+
+	// If the token is missing or invalid, return error
+	if err != nil {
+		return nil, err
+	}
+
+	// Token is valid
+	// fmt.Fprintln(w, "Welcome,", token.Claims.(*ArchiversClaims).Name)
+	u := &User{Id: token.Claims.(*ArchiversClaims).UserId}
+	err = u.Read(db)
+	return u, err
+}

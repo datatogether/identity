@@ -37,6 +37,9 @@ func main() {
 		// panic if the server is missing a vital configuration detail
 		panic(fmt.Errorf("server configuration error: %s", err.Error()))
 	}
+	if err = initKeys(cfg); err != nil {
+		panic(fmt.Errorf("server keys error: %s", err.Error()))
+	}
 
 	sessionStore = sessions.NewCookieStore([]byte(cfg.SessionSecret))
 
@@ -49,6 +52,9 @@ func main() {
 	m.Handle("/", middleware(HealthCheckHandler))
 	m.Handle("/session", middleware(SessionHandler))
 	m.Handle("/session/keys", middleware(KeysHandler))
+	m.Handle("/jwt/publickey", middleware(JwtPublicKeyHandler))
+	m.Handle("/jwt/session", middleware(JwtHandler))
+
 	// m.Handle("/session/groups", handler)
 	m.Handle("/search", middleware(UsersSearchHandler))
 	m.Handle("/users", middleware(UsersHandler))

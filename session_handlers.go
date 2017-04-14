@@ -9,6 +9,23 @@ import (
 	"strings"
 )
 
+func SessionHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "OPTIONS":
+		CORSHandler(w, r)
+	case "GET":
+		GetSessionHandler(w, r)
+	case "PUT":
+		SaveUserHandler(w, r)
+	case "POST":
+		LoginHandler(w, r)
+	case "DELETE":
+		LogoutHandler(w, r)
+	default:
+		ErrRes(w, ErrNotFound)
+	}
+}
+
 // grab the current serialized sesion user, returns nil if no user present
 func sessionUser(r *http.Request) *User {
 	if u, ok := r.Context().Value("user").(*User); ok {
@@ -46,10 +63,20 @@ func tokenUser(r *http.Request) *User {
 // attempt to extract & read a session user from a given request.
 // if no user is provided, an anonymous user is created
 func userFromRequest(db *sql.DB, r *http.Request) (*User, error) {
-	var u *User
+	var (
+		u   *User
+		err error
+	)
+
 	u = tokenUser(r)
 	if u == nil {
 		u = cookieUser(r)
+	}
+	if u == nil {
+		u, err = jwtUser(db, r)
+		if err != nil {
+			logger.Println(err.Error())
+		}
 	}
 
 	if u == nil {
@@ -90,23 +117,6 @@ func setUserSessionCookie(w http.ResponseWriter, r *http.Request, id string) err
 	}
 	session.Values["id"] = id
 	return session.Save(r, w)
-}
-
-func SessionHandler(w http.ResponseWriter, r *http.Request) {
-	switch r.Method {
-	case "OPTIONS":
-		CORSHandler(w, r)
-	case "GET":
-		GetSessionHandler(w, r)
-	case "PUT":
-		SaveUserHandler(w, r)
-	case "POST":
-		LoginHandler(w, r)
-	case "DELETE":
-		LogoutHandler(w, r)
-	default:
-		ErrRes(w, ErrNotFound)
-	}
 }
 
 func GetSessionHandler(w http.ResponseWriter, r *http.Request) {

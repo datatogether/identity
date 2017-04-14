@@ -42,7 +42,11 @@ type config struct {
 	// secret for encrypted session cookies. required.
 	SessionSecret string `json:"SESSION_SECRET"`
 
-	// Public Key to use for signing. Not yet used, but required soon.
+	// Private Key to use for signing thinks like JWTs
+	// to create: openssl genrsa -out app.rsa keysize
+	PrivateKey string `json:"PRIVATE_KEY"`
+	// Public Key to use for signing things like JWTs
+	// openssl rsa -in app.rsa -pubout > app.rsa.pub
 	PublicKey string `json:"PUBLIC_KEY"`
 
 	// TLS (HTTPS) enable support via LetsEncrypt, default false
@@ -86,6 +90,7 @@ func initConfig(mode string) (cfg *config, err error) {
 	cfg.Port = readEnvString("PORT", cfg.Port)
 	cfg.UrlRoot = readEnvString("URL_ROOT", cfg.UrlRoot)
 	cfg.PublicKey = readEnvString("PUBLIC_KEY", cfg.PublicKey)
+	cfg.PrivateKey = readEnvString("PRIVATE_KEY", cfg.PrivateKey)
 	cfg.TLS = readEnvBool("TLS", cfg.TLS)
 	cfg.UrlRoot = readEnvString("SESSION_SECRET", cfg.SessionSecret)
 	cfg.UserCookieKey = readEnvString("USER_COOKIE_KEY", cfg.UserCookieKey)
@@ -110,6 +115,7 @@ func initConfig(mode string) (cfg *config, err error) {
 		"PORT":            cfg.Port,
 		"POSTGRES_DB_URL": cfg.PostgresDbUrl,
 		"PUBLIC_KEY":      cfg.PublicKey,
+		"PRIVATE_KEY":     cfg.PrivateKey,
 	})
 
 	return
@@ -119,6 +125,13 @@ func initConfig(mode string) (cfg *config, err error) {
 func readEnvString(key, def string) string {
 	if env := os.Getenv(key); env != "" {
 		return env
+	}
+	return def
+}
+
+func readEnvBytes(key string, def []byte) []byte {
+	if env := os.Getenv(key); env != "" {
+		return []byte(env)
 	}
 	return def
 }
