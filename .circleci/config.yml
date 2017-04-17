@@ -37,7 +37,7 @@ jobs:
           name: Run tests
           command: go test -v -race ./... | tee /tmp/test-reports/archivers-space/original.txt ; test ${PIPESTATUS[0]} -eq 0
       - run: 
-          name: convert test output to junit-style xml
+          name: Convert test output to junit-style xml
           command: cat /tmp/test-reports/archivers-space/original.txt | go-junit-report > /tmp/test-reports/archivers-space/junit.xml
       - store_test_results:
           path: /tmp/test-reports/archivers-space/junit.xml
