@@ -28,13 +28,13 @@ jobs:
             done
             echo Failed waiting for Postgres && exit 1
       - run: 
-          name: make test results directory
+          name: Make test results directory
           command: mkdir -p /tmp/test-reports/archivers-space
       - run:
-          name: install dependencies
+          name: Install dependencies
           command: go-wrapper download && go-wrapper install && go get -v github.com/jstemmer/go-junit-report
       - run: 
-          name: run tests
+          name: Run tests
           command: go test -v -race ./... | tee /tmp/test-reports/archivers-space/original.txt ; test ${PIPESTATUS[0]} -eq 0
       - run: 
           name: convert test output to junit-style xml
