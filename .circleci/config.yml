@@ -57,3 +57,4 @@ jobs:
             docker build -t archivers/identity:latest -t archivers/identity:$TAG .
             docker login -u $DOCKER_USER -p $DOCKER_PASS
             docker push archivers/identity:$TAG
+            docker push archivers/identity:latest
