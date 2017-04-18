@@ -1,8 +1,11 @@
-// abstractions for connecting to lots of different postgres dbs
+// abstractions for working with postgres databases
 package main
 
 import (
 	"database/sql"
+	"fmt"
+	"github.com/gchaincl/dotsql"
+	"time"
 
 	_ "github.com/lib/pq"
 )
@@ -29,9 +32,19 @@ type sqlQueryExecable interface {
 
 func connectToAppDb() {
 	var err error
-	appDB, err = SetupConnection(cfg.PostgresDbUrl)
-	if err != nil {
-		logger.Println(err)
+	fmt.Println("connecting to db")
+	for i := 0; i < 1000; i++ {
+		appDB, err = SetupConnection(cfg.PostgresDbUrl)
+		if err != nil {
+			fmt.Println(err)
+			time.Sleep(time.Second)
+			continue
+		}
+		fmt.Println("connected to db")
+		if err := initializeDatabase(appDB); err != nil {
+			fmt.Println(err.Error())
+		}
+		break
 	}
 }
 
@@ -41,10 +54,66 @@ func SetupConnection(connString string) (db *sql.DB, err error) {
 	if err != nil {
 		return
 	}
-
 	if err = db.Ping(); err != nil {
 		return
 	}
-
 	return
+}
+
+// WARNING - THIS ZAPS WHATEVER DB IT'S GIVEN. DO NOT CALL THIS SHIT.
+// used for testing only, returns a teardown func
+func initializeDatabase(db *sql.DB) error {
+	var err error
+
+	// test query to check for database schema existence
+	var exists bool
+	if err = db.QueryRow("select exists(select * from users limit 1)").Scan(&exists); err == nil {
+		return nil
+	}
+
+	fmt.Println("initializing database with base test data")
+
+	schema, err := dotsql.LoadFromFile(packagePath("/sql/schema.sql"))
+	if err != nil {
+		return err
+	}
+
+	for _, cmd := range []string{
+		"drop-all",
+		"create-users",
+		"create-reset_tokens",
+		"create-keys",
+	} {
+		if _, err := schema.Exec(db, cmd); err != nil {
+			logger.Println(cmd, "error:", err)
+			return err
+		}
+	}
+
+	if err := insertTestData(
+		appDB,
+		"users",
+		"reset_tokens",
+		"keys",
+	); err != nil {
+		return err
+	}
+
+	return nil
+}
+
+// drops test data tables & re-inserts base data from sql/test_data.sql, based on
+// passed in table names
+func insertTestData(db *sql.DB, tables ...string) error {
+	commands, err := dotsql.LoadFromFile(packagePath("sql/test_data.sql"))
+	if err != nil {
+		return err
+	}
+	for _, t := range tables {
+		if _, err := commands.Exec(db, fmt.Sprintf("insert-%s", t)); err != nil {
+			err = fmt.Errorf("error insert-%s: %s", t, err.Error())
+			return err
+		}
+	}
+	return nil
 }
