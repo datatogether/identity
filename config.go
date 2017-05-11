@@ -75,6 +75,9 @@ type config struct {
 	// CertbotResponse is only for doing manual SSL certificate generation
 	// via LetsEncrypt.
 	CertbotResponse string `json:"CERTBOT_RESPONSE"`
+
+	GithubAppId     string `json:"GITHUB_APP_ID"`
+	GithubAppSecret string `json:"GITHUB_APP_SECRET"`
 }
 
 // initConfig pulls configuration from config.json

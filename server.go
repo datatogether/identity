@@ -63,6 +63,9 @@ func main() {
 	m.Handle("/groups", middleware(GroupsHandler))
 	m.Handle("/groups/", middleware(GroupHandler))
 
+	m.Handle("/oauth/github", middleware(HandleGithubOauth))
+	m.Handle("/oauth/callback", middleware(HandleOAuthCallback))
+
 	// m.Handle("/reset", middleware(ResetPasswordHandler))
 	// m.Handle("/reset/", middleware(ResetPasswordHandler))
 

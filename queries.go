@@ -70,3 +70,30 @@ WHERE
   left is null
 ORDER BY joined desc
 LIMIT $2 OFFSET $3;`
+
+const qOauthTokens = `
+SELECT
+  id, created, updated, title, description, color, profile_url, poster_url, creator_id
+FROM oauth_tokens;`
+
+const qOauthTokenInsert = `
+INSERT INTO oauth_tokens 
+  (user_id, service, token) 
+VALUES 
+  ($1, $2, $3);`
+
+const qOauthTokenUpdate = `
+UPDATE oauth_tokens SET
+  user_id = $1, service = $2, token = $3
+WHERE
+  user_id = $1 AND
+  service = $2;`
+
+const qOauthTokenDelete = `DELETE FROM oauth_tokens WHERE user_id = $1 AND service = $2;`
+
+const qOauthTokenByUserAndService = `
+select
+  user_id, service, token
+from oauth_tokens
+  where user_id = $1 AND
+  service = $2;`
