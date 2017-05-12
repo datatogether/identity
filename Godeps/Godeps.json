@@ -87,6 +87,14 @@
 		{
 			"ImportPath": "golang.org/x/net/context/ctxhttp",
 			"Rev": "b4690f45fa1cafc47b1c280c2e75116efe40cc13"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2",
+			"Rev": "ad516a297a9f2a74ecc244861b298c94bdd28b9d"
+		},
+		{
+			"ImportPath": "golang.org/x/oauth2/internal",
+			"Rev": "ad516a297a9f2a74ecc244861b298c94bdd28b9d"
 		}
 	]
 }
