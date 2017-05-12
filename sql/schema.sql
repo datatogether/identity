@@ -1,5 +1,5 @@
 -- name: drop-all
-DROP TABLE IF EXISTS user_keys, oauth_tokens, keys, users, reset_tokens, groups, group_users CASCADE;
+DROP TABLE IF EXISTS user_keys, oauth_users, keys, users, reset_tokens, groups, group_users CASCADE;
 
 -- name: create-users
 CREATE TABLE users (
@@ -24,7 +24,10 @@ CREATE TABLE users (
 CREATE TABLE oauth_tokens (
   user_id            UUID NOT NULL references users(id),
   service            text NOT NULL,
-  token              text NOT NULL,
+  access_token       text NOT NULL,
+  token_type         text NOT NULL DEFAULT 'Bearer',
+  refresh_token      text NOT NULL,
+  expiry             timestamp,
   PRIMARY KEY        (user_id, service)
 );
 

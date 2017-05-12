@@ -40,6 +40,7 @@ func main() {
 	if err = initKeys(cfg); err != nil {
 		panic(fmt.Errorf("server keys error: %s", err.Error()))
 	}
+	initOauth()
 
 	sessionStore = sessions.NewCookieStore([]byte(cfg.SessionSecret))
 
@@ -52,6 +53,8 @@ func main() {
 	m.Handle("/", middleware(HealthCheckHandler))
 	m.Handle("/session", middleware(SessionHandler))
 	m.Handle("/session/keys", middleware(KeysHandler))
+	m.Handle("/session/oauth", middleware(SessionUserTokensHandler))
+	m.Handle("/session/repoaccess", middleware(GithubRepoAccessHandler))
 	m.Handle("/jwt/publickey", middleware(JwtPublicKeyHandler))
 	m.Handle("/jwt/session", middleware(JwtHandler))
 
@@ -63,8 +66,8 @@ func main() {
 	m.Handle("/groups", middleware(GroupsHandler))
 	m.Handle("/groups/", middleware(GroupHandler))
 
-	m.Handle("/oauth/github", middleware(HandleGithubOauth))
-	m.Handle("/oauth/callback", middleware(HandleOAuthCallback))
+	m.Handle("/oauth/github", middleware(GithubOauthHandler))
+	m.Handle("/oauth/callback", middleware(GithubOAuthCallbackHandler))
 
 	// m.Handle("/reset", middleware(ResetPasswordHandler))
 	// m.Handle("/reset/", middleware(ResetPasswordHandler))

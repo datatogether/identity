@@ -1,23 +1,61 @@
 package main
 
 import (
+	"encoding/json"
+	"fmt"
 	"golang.org/x/oauth2"
 	"io/ioutil"
 	"net/http"
 )
 
-func HandleGithubOauth(w http.ResponseWriter, r *http.Request) {
-	githubOAuth = &oauth2.Config{
-		ClientID:     cfg.GithubAppId,
-		ClientSecret: cfg.GithubAppSecret,
-		// RedirectURL:  "https://ident.archivers.space/oauth.callback",
-		Scopes: []string{"user", "repo"},
-		Endpoint: oauth2.Endpoint{
-			AuthURL:  "https://github.com/login/oauth/authorize",
-			TokenURL: "https://github.com/login/oauth/access_token",
-		},
+func SessionUserTokensHandler(w http.ResponseWriter, r *http.Request) {
+	tokens, err := sessionUser(r).OauthTokens(appDB)
+	if err != nil {
+		ErrRes(w, err)
+		return
 	}
 
+	if err := json.NewEncoder(w).Encode(tokens); err != nil {
+		logger.Println(err.Error())
+	}
+}
+
+func GithubRepoAccessHandler(w http.ResponseWriter, r *http.Request) {
+	tokens, err := sessionUser(r).OauthTokens(appDB)
+	if err != nil {
+		ErrRes(w, err)
+		return
+	}
+
+	for _, t := range tokens {
+		if t.Service == OauthServiceGithub {
+			g := NewGithub(t.token)
+			info, err := g.CurrentUserInfo()
+			if err != nil {
+				ErrRes(w, err)
+				return
+			}
+
+			if info["login"] == nil {
+				ErrRes(w, fmt.Errorf("no user found"))
+				return
+			}
+
+			perm, err := g.RepoPermission(r.FormValue("owner"), r.FormValue("repo"), info["login"].(string))
+			if err != nil {
+				ErrRes(w, err)
+				return
+			}
+
+			Res(w, false, map[string]string{"permission": perm})
+			return
+		}
+	}
+
+	ErrRes(w, fmt.Errorf("this user hasn't enabled github for their account"))
+}
+
+func GithubOauthHandler(w http.ResponseWriter, r *http.Request) {
 	// Redirect user to consent page to ask for permission
 	// for the scopes specified above.
 	url := githubOAuth.AuthCodeURL("state", oauth2.AccessTypeOffline)
@@ -26,15 +64,14 @@ func HandleGithubOauth(w http.ResponseWriter, r *http.Request) {
 }
 
 // TODO - like woah
-func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
+func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	user := sessionUser(r)
 	ctx := r.Context()
 
 	// if state := r.FormValue("state"); state != oauth2.AccessTypeOffline {
-
 	//  }
 
-	service := "github"
+	service := OauthServiceGithub
 	// if service != "github" {
 	// 	logger.Fatal(err)
 	// }
@@ -45,13 +82,33 @@ func HandleOAuthCallback(w http.ResponseWriter, r *http.Request) {
 		logger.Fatal(err)
 	}
 
+	t := &UserOauthToken{
+		User:    user,
+		Service: service,
+		token:   tok,
+	}
+
 	if user.anonymous {
-		if err := user.Save(appDB); err != nil {
+		// if err := user.Save(appDB); err != nil {
+		// 	logger.Println(err.Error())
+		// }
+		ser, err := t.UserService()
+		if err != nil {
 			logger.Println(err.Error())
+			return
+		}
+		u, err := ser.ExtractUser()
+		if err != nil {
+			logger.Println(err.Error())
+			return
+		}
+		t.User = u
+		if err := t.User.Save(appDB); err != nil {
+			logger.Println(err.Error())
+			return
 		}
 	}
 
-	t := &OauthToken{User: user, Service: service}
 	if err := t.Save(appDB); err != nil {
 		logger.Fatal(err)
 	}
