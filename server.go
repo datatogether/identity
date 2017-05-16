@@ -53,6 +53,7 @@ func main() {
 	m.HandleFunc("/.well-known/acme-challenge/", CertbotHandler)
 	m.Handle("/", middleware(HealthCheckHandler))
 	m.Handle("/session", middleware(SessionHandler))
+	m.Handle("/logout", middleware(LogoutHandler))
 	m.Handle("/session/keys", middleware(KeysHandler))
 	m.Handle("/session/oauth", middleware(SessionUserTokensHandler))
 	m.Handle("/session/oauth/github/repoaccess", middleware(GithubRepoAccessHandler))
