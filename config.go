@@ -104,6 +104,8 @@ func initConfig(mode string) (cfg *config, err error) {
 	cfg.HttpAuthPassword = readEnvString("HTTP_AUTH_PASSWORD", cfg.HttpAuthPassword)
 	cfg.CertbotResponse = readEnvString("CERTBOT_RESPONSE", cfg.CertbotResponse)
 	cfg.ProxyForceHttps = readEnvBool("PROXY_FORCE_HTTPS", cfg.ProxyForceHttps)
+	cfg.GithubAppId = readEnvString("GITHUB_APP_ID", cfg.GithubAppId)
+	cfg.GithubAppSecret = readEnvString("GITHUB_APP_SECRET", cfg.GithubAppSecret)
 
 	// make sure port is set
 	if cfg.Port == "" {

@@ -54,7 +54,7 @@ func main() {
 	m.Handle("/session", middleware(SessionHandler))
 	m.Handle("/session/keys", middleware(KeysHandler))
 	m.Handle("/session/oauth", middleware(SessionUserTokensHandler))
-	m.Handle("/session/repoaccess", middleware(GithubRepoAccessHandler))
+	m.Handle("/session/oauth/github/repoaccess", middleware(GithubRepoAccessHandler))
 	m.Handle("/jwt/publickey", middleware(JwtPublicKeyHandler))
 	m.Handle("/jwt/session", middleware(JwtHandler))
 
@@ -67,7 +67,7 @@ func main() {
 	m.Handle("/groups/", middleware(GroupHandler))
 
 	m.Handle("/oauth/github", middleware(GithubOauthHandler))
-	m.Handle("/oauth/callback", middleware(GithubOAuthCallbackHandler))
+	m.Handle("/oauth/github/callback", middleware(GithubOAuthCallbackHandler))
 
 	// m.Handle("/reset", middleware(ResetPasswordHandler))
 	// m.Handle("/reset/", middleware(ResetPasswordHandler))

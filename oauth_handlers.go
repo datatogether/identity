@@ -8,6 +8,7 @@ import (
 	"net/http"
 )
 
+// Return all Token types for the currently logged-in user
 func SessionUserTokensHandler(w http.ResponseWriter, r *http.Request) {
 	tokens, err := sessionUser(r).OauthTokens(appDB)
 	if err != nil {
@@ -20,6 +21,7 @@ func SessionUserTokensHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+// Check currently logged-in user's access to a provided github repo
 func GithubRepoAccessHandler(w http.ResponseWriter, r *http.Request) {
 	tokens, err := sessionUser(r).OauthTokens(appDB)
 	if err != nil {
@@ -47,14 +49,15 @@ func GithubRepoAccessHandler(w http.ResponseWriter, r *http.Request) {
 				return
 			}
 
-			Res(w, false, map[string]string{"permission": perm})
+			Res(w, true, map[string]string{"permission": perm})
 			return
 		}
 	}
 
-	ErrRes(w, fmt.Errorf("this user hasn't enabled github for their account"))
+	ErrRes(w, NewFmtError(http.StatusUnauthorized, "this user hasn't enabled github for their account"))
 }
 
+// redirect user to github auth url
 func GithubOauthHandler(w http.ResponseWriter, r *http.Request) {
 	// Redirect user to consent page to ask for permission
 	// for the scopes specified above.
@@ -63,18 +66,14 @@ func GithubOauthHandler(w http.ResponseWriter, r *http.Request) {
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
-// TODO - like woah
+// Handle Oauth response from github
 func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	user := sessionUser(r)
 	ctx := r.Context()
 
+	// TODO - MITM check
 	// if state := r.FormValue("state"); state != oauth2.AccessTypeOffline {
 	//  }
-
-	service := OauthServiceGithub
-	// if service != "github" {
-	// 	logger.Fatal(err)
-	// }
 
 	code := r.FormValue("code")
 	tok, err := githubOAuth.Exchange(ctx, code)
@@ -84,14 +83,11 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	t := &UserOauthToken{
 		User:    user,
-		Service: service,
+		Service: OauthServiceGithub,
 		token:   tok,
 	}
 
 	if user.anonymous {
-		// if err := user.Save(appDB); err != nil {
-		// 	logger.Println(err.Error())
-		// }
 		ser, err := t.UserService()
 		if err != nil {
 			logger.Println(err.Error())
@@ -110,18 +106,24 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := t.Save(appDB); err != nil {
-		logger.Fatal(err)
+		logger.Println(err.Error())
+		ErrRes(w, err)
+		return
 	}
 
 	client := githubOAuth.Client(ctx, tok)
 	res, err := client.Get("https://api.github.com/repos/edgi-govdata-archiving/archivers.space/collaborators")
 	if err != nil {
-		logger.Fatal(err)
+		logger.Println(err.Error())
+		ErrRes(w, err)
+		return
 	}
 	defer res.Body.Close()
 	data, err := ioutil.ReadAll(res.Body)
 	if err != nil {
-		logger.Fatal(err)
+		logger.Println(err.Error())
+		ErrRes(w, err)
+		return
 	}
 
 	w.Write(data)

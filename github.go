@@ -35,7 +35,6 @@ func (g Github) ExtractUser() (*User, error) {
 }
 
 func (g Github) CurrentUserInfo() (map[string]interface{}, error) {
-	logger.Println(g.endpoint("/user"))
 	res, err := g.client.Get(g.endpoint("/user"))
 	if err != nil {
 		return nil, err
@@ -49,6 +48,7 @@ func (g Github) CurrentUserInfo() (map[string]interface{}, error) {
 }
 
 func (g Github) RepoPermission(org, repo, username string) (string, error) {
+	logger.Println(fmt.Sprintf("/repos/%s/%s/collaborators/%s/permission", org, repo, username))
 	res, err := g.client.Get(g.endpoint(fmt.Sprintf("/repos/%s/%s/collaborators/%s/permission", org, repo, username)))
 	if err != nil {
 		return "", err
@@ -56,6 +56,11 @@ func (g Github) RepoPermission(org, repo, username string) (string, error) {
 
 	perm := map[string]interface{}{}
 	if err := json.NewDecoder(res.Body).Decode(&perm); err != nil {
+		return "", err
+	}
+
+	if perm["permission"] == nil {
+		logger.Println(perm)
 		return "", err
 	}
 

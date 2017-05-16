@@ -25,7 +25,7 @@ func ErrRes(w http.ResponseWriter, e error) error {
 		env := map[string]interface{}{
 			"meta": map[string]interface{}{
 				"status":  500,
-				"message": "something bad happend on our end",
+				"message": e.Error(),
 			},
 		}
 		w.WriteHeader(http.StatusInternalServerError)
