@@ -56,6 +56,8 @@ type config struct {
 
 	// Key to store user's cookie under
 	UserCookieKey string `json:"USER_COOKIE_KEY"`
+	// domain to attach cookie to.
+	UserCookieDomain string `json:"USER_COOKIE_DOMAIN"`
 
 	// support CORS signing from a list of origins
 	AllowedOrigins []string `json:"ALLOWED_ORIGINS"`
@@ -98,6 +100,7 @@ func initConfig(mode string) (cfg *config, err error) {
 	cfg.TLS = readEnvBool("TLS", cfg.TLS)
 	cfg.UrlRoot = readEnvString("SESSION_SECRET", cfg.SessionSecret)
 	cfg.UserCookieKey = readEnvString("USER_COOKIE_KEY", cfg.UserCookieKey)
+	cfg.UserCookieDomain = readEnvString("USER_COOKIE_DOMAIN", cfg.UserCookieDomain)
 	cfg.PostgresDbUrl = readEnvString("POSTGRES_DB_URL", cfg.PostgresDbUrl)
 	cfg.AllowedOrigins = readEnvStringSlice("ALLOWED_ORIGINS", cfg.AllowedOrigins)
 	cfg.HttpAuthUsername = readEnvString("HTTP_AUTH_USERNAME", cfg.HttpAuthUsername)
