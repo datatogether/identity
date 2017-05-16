@@ -23,10 +23,10 @@ CREATE TABLE users (
 -- name: create-oauth_tokens
 CREATE TABLE oauth_tokens (
   user_id            UUID NOT NULL references users(id),
-  service            text NOT NULL,
-  access_token       text NOT NULL,
+  service            text NOT NULL DEFAULT '',
+  access_token       text NOT NULL DEFAULT '',
   token_type         text NOT NULL DEFAULT 'Bearer',
-  refresh_token      text NOT NULL,
+  refresh_token      text NOT NULL DEFAULT '',
   expiry             timestamp,
   PRIMARY KEY        (user_id, service)
 );

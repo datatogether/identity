@@ -91,16 +91,19 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		ser, err := t.UserService()
 		if err != nil {
 			logger.Println(err.Error())
+			ErrRes(w, err)
 			return
 		}
 		u, err := ser.ExtractUser()
 		if err != nil {
 			logger.Println(err.Error())
+			ErrRes(w, err)
 			return
 		}
 		t.User = u
 		if err := t.User.Save(appDB); err != nil {
 			logger.Println(err.Error())
+			ErrRes(w, err)
 			return
 		}
 	}
