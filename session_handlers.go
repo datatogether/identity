@@ -173,6 +173,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	if id, ok := session.Values["id"].(string); ok {
 		u := NewUser(id)
 		session.Values["id"] = nil
+		session.Options.MaxAge = -1
 		if err := session.Save(r, w); err != nil {
 			ErrRes(w, err)
 			return
