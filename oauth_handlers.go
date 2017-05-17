@@ -73,13 +73,10 @@ func GithubOauthHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // Handle Oauth response from github
+// TODO - refactor ASAP.
 func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	user := sessionUser(r)
 	ctx := r.Context()
-
-	// TODO - MITM check
-	// if state := r.FormValue("state"); state != oauth2.AccessTypeOffline {
-	//  }
 
 	redirectBytes, err := base64.StdEncoding.DecodeString(r.FormValue("state"))
 	if err != nil {
@@ -101,14 +98,24 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		token:   tok,
 	}
 
-	if user.anonymous {
-		ser, err := t.UserService()
+	if err := t.Read(appDB); err == nil {
+		if err := setUserSessionCookie(w, r, t.User.Id); err != nil {
+			ErrRes(w, fmt.Errorf("error setting session cookie: %s", err.Error()))
+			return
+		}
+
+		if redirect != "" {
+			http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
+			return
+		}
+	} else if user.anonymous {
+		svc, err := t.UserService()
 		if err != nil {
 			logger.Println(err.Error())
 			ErrRes(w, err)
 			return
 		}
-		u, err := ser.ExtractUser()
+		u, err := svc.ExtractUser()
 		if err != nil {
 			logger.Println(err.Error())
 			ErrRes(w, err)

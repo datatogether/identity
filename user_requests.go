@@ -1,5 +1,9 @@
 package main
 
+import (
+	"strings"
+)
+
 // UsersRequest defines a request for users, outlining all possible
 // options for scoping & shaping the desired response
 type UsersRequest struct {
@@ -33,8 +37,11 @@ type CreateUserRequest struct {
 }
 
 func (r *CreateUserRequest) Exec() (interface{}, error) {
-	if r.User.password == "" {
+	if strings.TrimSpace(r.User.password) == "" {
 		return nil, ErrPasswordRequired
+	}
+	if strings.TrimSpace(r.User.Email) == "" {
+		return nil, ErrEmailRequired
 	}
 
 	if err := r.User.Save(appDB); err != nil {

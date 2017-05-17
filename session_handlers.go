@@ -75,7 +75,7 @@ func userFromRequest(db *sql.DB, r *http.Request) (*User, error) {
 	if u == nil {
 		u, err = jwtUser(db, r)
 		if err != nil {
-			logger.Println(err.Error())
+			// logger.Println(err.Error())
 		}
 	}
 

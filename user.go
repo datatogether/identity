@@ -323,9 +323,9 @@ func (u *User) validateCreate(db *sql.DB) error {
 	}
 
 	u.password = strings.TrimSpace(u.password)
-	// we don't require passwords b/c of oauth, it is the
-	// duty of all account creation handlers to screen for missing
-	// passwords
+	// we don't require passwords b/c oauth won't provide one, it is the
+	// duty of all account creation handlers to screen for missing passwords
+	// eg:
 	// if u.password == "" {
 	// 	return ErrPasswordRequired
 	// }
@@ -348,11 +348,14 @@ func (u *User) valFields() error {
 		return ErrInvalidUsername
 	}
 
+	// we don't require email b/c oauth won't always provide one, it is the
+	// duty of all account creation handlers to screen for missing email addresses
+	// eg:
+	// if u.Email == "" {
+	// 	return ErrEmailRequired
+	// }
 	u.Email = strings.TrimSpace(u.Email)
-	if u.Email == "" {
-		return ErrEmailRequired
-	}
-	if !validEmail(u.Email) {
+	if u.Email != "" && !validEmail(u.Email) {
 		return ErrInvalidEmail
 	}
 
