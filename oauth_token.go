@@ -37,6 +37,12 @@ func (t *UserOauthToken) UserService() (OauthUserService, error) {
 }
 
 func (g *UserOauthToken) Read(db *sql.DB) error {
+	// first try to read by token id
+	if g.token != nil {
+		if err := g.UnmarshalSQL(db.QueryRow(qUserOauthTokenByAccessToken, g.token.AccessToken)); err == nil {
+			return nil
+		}
+	}
 	if g.User == nil || g.Service == "" {
 		return ErrNotFound
 	}

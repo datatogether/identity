@@ -323,11 +323,16 @@ func (u *User) validateCreate(db *sql.DB) error {
 	}
 
 	u.password = strings.TrimSpace(u.password)
-	if u.password == "" {
-		return ErrPasswordRequired
-	}
-	if err := u.validatePassword(); err != nil {
-		return err
+	// we don't require passwords b/c of oauth, it is the
+	// duty of all account creation handlers to screen for missing
+	// passwords
+	// if u.password == "" {
+	// 	return ErrPasswordRequired
+	// }
+	if u.password != "" {
+		if err := u.validatePassword(); err != nil {
+			return err
+		}
 	}
 
 	return nil

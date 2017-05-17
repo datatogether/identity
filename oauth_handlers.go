@@ -1,6 +1,7 @@
 package main
 
 import (
+	"encoding/base64"
 	"encoding/json"
 	"fmt"
 	"golang.org/x/oauth2"
@@ -61,7 +62,12 @@ func GithubRepoAccessHandler(w http.ResponseWriter, r *http.Request) {
 func GithubOauthHandler(w http.ResponseWriter, r *http.Request) {
 	// Redirect user to consent page to ask for permission
 	// for the scopes specified above.
-	url := githubOAuth.AuthCodeURL("state", oauth2.AccessTypeOffline)
+	redirect := r.FormValue("redirect")
+	if redirect == "" {
+		redirect = cfg.UrlRoot
+	}
+	b64 := base64.StdEncoding.EncodeToString([]byte(redirect))
+	url := githubOAuth.AuthCodeURL(b64, oauth2.AccessTypeOffline)
 	// logger.Println("Visit the URL for the auth dialog: %v", url)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
@@ -74,6 +80,14 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	// TODO - MITM check
 	// if state := r.FormValue("state"); state != oauth2.AccessTypeOffline {
 	//  }
+
+	redirectBytes, err := base64.StdEncoding.DecodeString(r.FormValue("state"))
+	if err != nil {
+		logger.Println(err.Error())
+		ErrRes(w, fmt.Errorf("bad response value: %s", err.Error()))
+		return
+	}
+	redirect := string(redirectBytes)
 
 	code := r.FormValue("code")
 	tok, err := githubOAuth.Exchange(ctx, code)
@@ -101,16 +115,47 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		t.User = u
-		if err := t.User.Save(appDB); err != nil {
-			logger.Println(err.Error())
-			ErrRes(w, err)
-			return
+
+		emailUser := &User{Email: u.Email}
+		if err := emailUser.Read(appDB); err == nil {
+			// if we have a matching email, connect the two accounts
+			t.User = emailUser
+		} else if err := t.User.Save(appDB); err != nil {
+			// create a new user that matches
+			// TODO - better username collision handling
+			logger.Println(err)
+			if err == ErrUsernameTaken {
+				for i := 1; i < 1000; i++ {
+					t.User.Username = fmt.Sprintf("%s_%d", t.User.Username, i)
+					if err := t.User.Save(appDB); err == nil {
+						break
+					} else if err != ErrUsernameTaken {
+						logger.Println(err.Error())
+						ErrRes(w, err)
+						return
+					}
+				}
+			} else {
+				logger.Println(err.Error())
+				ErrRes(w, err)
+				return
+			}
 		}
 	}
 
 	if err := t.Save(appDB); err != nil {
 		logger.Println(err.Error())
 		ErrRes(w, err)
+		return
+	}
+
+	if err := setUserSessionCookie(w, r, t.User.Id); err != nil {
+		ErrRes(w, fmt.Errorf("error setting session cookie: %s", err.Error()))
+		return
+	}
+
+	if redirect != "" {
+		http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 		return
 	}
 

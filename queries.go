@@ -80,12 +80,19 @@ VALUES
 
 const qUserOauthTokenUpdate = `
 UPDATE oauth_tokens SET
-  user_id = $1, service = $2, access_token = $3, token_type = $4, refresh_token = $5, expiry = $5
+  user_id = $1, service = $2, access_token = $3, token_type = $4, refresh_token = $5, expiry = $6
 WHERE
   user_id = $1 AND
   service = $2;`
 
 const qUserOauthTokenDelete = `DELETE FROM oauth_tokens WHERE user_id = $1 AND service = $2;`
+
+const qUserOauthTokenByAccessToken = `
+SELECT
+  user_id, service, access_token, token_type, refresh_token, expiry
+FROM oauth_tokens
+WHERE 
+  access_token = $1;`
 
 const qUserOauthTokenByUserAndService = `
 SELECT

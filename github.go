@@ -25,12 +25,12 @@ func (g Github) ExtractUser() (*User, error) {
 	}
 
 	return &User{
-		Username: info["username"].(string),
+		Username: objStringVal(info, "login"),
 		// TODO - interpret github "type" field
 		Type:        UserTypeUser,
-		Name:        info["name"].(string),
-		Description: info["bio"].(string),
-		Email:       info["email"].(string),
+		Name:        objStringVal(info, "name"),
+		Description: objStringVal(info, "bio"),
+		Email:       objStringVal(info, "email"),
 	}, nil
 }
 
@@ -46,7 +46,6 @@ func (g Github) CurrentUserInfo() (map[string]interface{}, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		logger.Println(info)
 		return nil, fmt.Errorf("invalid response status code fetching User Info: %d", res.StatusCode)
 	}
 	return info, nil

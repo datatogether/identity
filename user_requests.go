@@ -33,6 +33,10 @@ type CreateUserRequest struct {
 }
 
 func (r *CreateUserRequest) Exec() (interface{}, error) {
+	if r.User.password == "" {
+		return nil, ErrPasswordRequired
+	}
+
 	if err := r.User.Save(appDB); err != nil {
 		return nil, err
 	}
