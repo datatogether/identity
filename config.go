@@ -87,8 +87,11 @@ type config struct {
 func initConfig(mode string) (cfg *config, err error) {
 	cfg = &config{}
 
-	if err := loadConfigFile(mode, cfg); err != nil {
-		return cfg, err
+	if path := configFilePath(mode, cfg); path != "" {
+		logger.Printf("loading config file: %s", filepath.Base(path))
+		conf.Load(cfg, path)
+	} else {
+		conf.Load(cfg)
 	}
 
 	// make sure port is set
@@ -126,19 +129,17 @@ func requireConfigStrings(values map[string]string) error {
 	return nil
 }
 
-// checks for config.[mode].json file to read configuration from if the file exists
-// defaults to config.json, silently fails if no configuration file is present.
-func loadConfigFile(mode string, cfg *config) (err error) {
+// checks for .[mode].env file to read configuration from if the file exists
+// defaults to .env, returns "" if no file is present
+func configFilePath(mode string, cfg *config) string {
 	fileName := packagePath(fmt.Sprintf(".%s.env", mode))
 	if !fileExists(fileName) {
-		fileName = ".env"
+		fileName = packagePath(".env")
 		if !fileExists(fileName) {
-			return nil
+			return ""
 		}
 	}
-
-	logger.Printf("loading config file: %s", filepath.Base(fileName))
-	return conf.Load(cfg, fileName)
+	return fileName
 }
 
 // Does this file exist?
