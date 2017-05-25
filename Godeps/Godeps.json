@@ -4,6 +4,10 @@
 	"GodepVersion": "v79",
 	"Deps": [
 		{
+			"ImportPath": "github.com/archivers-space/config",
+			"Rev": "eba5c3af9362873cc43c38480ab443c9518c8c06"
+		},
+		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",
 			"Comment": "v3.0.0-17-g2268707",
 			"Rev": "2268707a8f0843315e2004ee4f1d021dc08baedf"
@@ -32,6 +36,11 @@
 			"ImportPath": "github.com/gorilla/sessions",
 			"Comment": "v1.1-2-g83c8db3",
 			"Rev": "83c8db3bdc9be789e57e3756ffbcffd2d7d40176"
+		},
+		{
+			"ImportPath": "github.com/joho/godotenv",
+			"Comment": "v1.1",
+			"Rev": "726cc8b906e3d31c70a9671c90a13716a8d3f50d"
 		},
 		{
 			"ImportPath": "github.com/lib/pq",
