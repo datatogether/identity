@@ -2,8 +2,5 @@
 gin-bin
 sentry
 coverage.out
-config.production.json
-config.json
-config.test.json
-config.develop.json
+*.env
 identity
