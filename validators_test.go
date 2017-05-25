@@ -117,3 +117,24 @@ func TestValidUser(t *testing.T) {
 		}
 	}
 }
+
+func TestValidUrlString(t *testing.T) {
+	cases := []struct {
+		rawurl string
+		result string
+		err    error
+	}{
+		{"apple.com", "http://apple.com", nil},
+		{"http://localhost:3000", "http://localhost:3000", nil},
+	}
+
+	for i, c := range cases {
+		result, err := ValidUrlString(c.rawurl)
+		if err != c.err {
+			t.Errorf("case %d error mismatch. %s != %s", i, c.err, err)
+		}
+		if result != c.result {
+			t.Errorf("case %d result mismatch. %s != %s", i, c.result, result)
+		}
+	}
+}

@@ -46,6 +46,7 @@ func (g Github) CurrentUserInfo() (map[string]interface{}, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
+		logger.Println(info)
 		return nil, fmt.Errorf("invalid response status code fetching User Info: %d", res.StatusCode)
 	}
 	return info, nil

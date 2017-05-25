@@ -2,6 +2,7 @@ package main
 
 import (
 	"database/sql"
+	"net/url"
 	"regexp"
 	"strings"
 
@@ -16,8 +17,6 @@ var (
 	emailRegex = regexp.MustCompile(`(?i)[A-Z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[A-Z0-9!#$%&'*+/=?^_{|}~-]+)*@(?:[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?\.)+[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?`)
 	slugRegex  = regexp.MustCompile(`^[a-z0-9-_]+$`)
 	pathRegex  = regexp.MustCompile(`^[a-z0-9-_/]+/$`)
-	limitRe    = regexp.MustCompile(`(?i)\s*LIMIT\s*[0-9]*`)
-	skipRe     = regexp.MustCompile(`(?i)\s*OFFSET\s*[0-9]*`)
 )
 
 // make sure a username contains only alphanumeric chars,_,-, and starts with a letter
@@ -113,4 +112,19 @@ func ValidUser(db sqlQueryable, u *User) (err error) {
 	}
 
 	return
+}
+
+// ValidUrlString adds
+func ValidUrlString(rawurl string) (string, error) {
+	u, err := url.Parse(rawurl)
+	if err != nil {
+		return "", err
+	}
+
+	if u.Scheme == "" {
+		// assume http if no scheme exists
+		u.Scheme = "http"
+	}
+
+	return u.String(), nil
 }

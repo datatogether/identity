@@ -123,8 +123,8 @@ func GetSessionHandler(w http.ResponseWriter, r *http.Request) {
 	u := sessionUser(r)
 	envelope := r.FormValue("envelope") != "false"
 	if u == nil || u.Id == "" {
-		w.WriteHeader(http.StatusNoContent)
-		w.Write([]byte("{}"))
+		w.WriteHeader(http.StatusUnauthorized)
+		return
 	} else {
 		Res(w, envelope, u)
 	}

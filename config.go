@@ -54,6 +54,10 @@ type config struct {
 	// should be true in production
 	TLS bool `json:"TLS"`
 
+	// because identity is an api-only server, FrontendUrl specifies
+	// a user-friendly URL to redirect to
+	FrontendUrl string `json:"FRONTEND_URL"`
+
 	// Key to store user's cookie under
 	UserCookieKey string `json:"USER_COOKIE_KEY"`
 	// domain to attach cookie to.
@@ -109,6 +113,7 @@ func initConfig(mode string) (cfg *config, err error) {
 	cfg.ProxyForceHttps = readEnvBool("PROXY_FORCE_HTTPS", cfg.ProxyForceHttps)
 	cfg.GithubAppId = readEnvString("GITHUB_APP_ID", cfg.GithubAppId)
 	cfg.GithubAppSecret = readEnvString("GITHUB_APP_SECRET", cfg.GithubAppSecret)
+	cfg.FrontendUrl = readEnvString("FRONTEND_URL", cfg.FrontendUrl)
 
 	// make sure port is set
 	if cfg.Port == "" {
