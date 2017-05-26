@@ -46,14 +46,14 @@ func (g Github) CurrentUserInfo() (map[string]interface{}, error) {
 	}
 
 	if res.StatusCode != http.StatusOK {
-		logger.Println(info)
+		log.Info(info)
 		return nil, fmt.Errorf("invalid response status code fetching User Info: %d", res.StatusCode)
 	}
 	return info, nil
 }
 
 func (g Github) RepoPermission(org, repo, username string) (string, error) {
-	logger.Println(fmt.Sprintf("/repos/%s/%s/collaborators/%s/permission", org, repo, username))
+	log.Info(fmt.Sprintf("/repos/%s/%s/collaborators/%s/permission", org, repo, username))
 	res, err := g.client.Get(g.endpoint(fmt.Sprintf("/repos/%s/%s/collaborators/%s/permission", org, repo, username)))
 	if err != nil {
 		return "", err
@@ -65,7 +65,7 @@ func (g Github) RepoPermission(org, repo, username string) (string, error) {
 	}
 
 	if perm["permission"] == nil {
-		logger.Println(perm)
+		log.Info(perm)
 		return "", err
 	}
 

@@ -88,7 +88,7 @@ func initConfig(mode string) (cfg *config, err error) {
 	cfg = &config{}
 
 	if path := configFilePath(mode, cfg); path != "" {
-		logger.Printf("loading config file: %s", filepath.Base(path))
+		log.Infof("loading config file: %s", filepath.Base(path))
 		conf.Load(cfg, path)
 	} else {
 		conf.Load(cfg)

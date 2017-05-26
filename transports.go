@@ -52,7 +52,7 @@ func HttpsRedirect() {
 		return
 	}
 
-	logger.Println("TCP Port 80 is available, redirecting traffic to https")
+	log.Info("TCP Port 80 is available, redirecting traffic to https")
 
 	srv := &http.Server{
 		ReadTimeout:  5 * time.Second,
@@ -63,5 +63,5 @@ func HttpsRedirect() {
 			http.Redirect(w, req, url, http.StatusMovedPermanently)
 		}),
 	}
-	logger.Fatal(srv.Serve(ln))
+	log.Fatal(srv.Serve(ln))
 }

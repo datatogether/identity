@@ -17,7 +17,7 @@ func SessionUserTokensHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := json.NewEncoder(w).Encode(tokens); err != nil {
-		logger.Println(err.Error())
+		log.Info(err.Error())
 	}
 }
 
@@ -34,20 +34,20 @@ func GithubRepoAccessHandler(w http.ResponseWriter, r *http.Request) {
 			g := NewGithub(t.token)
 			info, err := g.CurrentUserInfo()
 			if err != nil {
-				logger.Println(err.Error())
+				log.Info(err.Error())
 				ErrRes(w, err)
 				return
 			}
 
 			if info["login"] == nil {
-				logger.Println("no user found")
+				log.Info("no user found")
 				ErrRes(w, fmt.Errorf("no user found"))
 				return
 			}
 
 			perm, err := g.RepoPermission(r.FormValue("owner"), r.FormValue("repo"), info["login"].(string))
 			if err != nil {
-				logger.Println(err.Error())
+				log.Info(err.Error())
 				ErrRes(w, err)
 				return
 			}
@@ -58,7 +58,7 @@ func GithubRepoAccessHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	err = NewFmtError(http.StatusUnauthorized, "this user hasn't enabled github for their account")
-	logger.Println(err.Error())
+	log.Info(err.Error())
 	ErrRes(w, err)
 }
 
@@ -72,7 +72,7 @@ func GithubOauthHandler(w http.ResponseWriter, r *http.Request) {
 	}
 	b64 := base64.StdEncoding.EncodeToString([]byte(redirect))
 	url := githubOAuth.AuthCodeURL(b64, oauth2.AccessTypeOffline)
-	// logger.Println("Visit the URL for the auth dialog: %v", url)
+	// log.Info("Visit the URL for the auth dialog: %v", url)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
 
@@ -84,7 +84,7 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 
 	redirectBytes, err := base64.StdEncoding.DecodeString(r.FormValue("state"))
 	if err != nil {
-		logger.Println(err.Error())
+		log.Info(err.Error())
 		ErrRes(w, fmt.Errorf("bad response value: %s", err.Error()))
 		return
 	}
@@ -93,7 +93,7 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	code := r.FormValue("code")
 	tok, err := githubOAuth.Exchange(ctx, code)
 	if err != nil {
-		logger.Fatal(err)
+		log.Fatal(err)
 	}
 
 	t := &UserOauthToken{
@@ -115,13 +115,13 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	} else if user.anonymous {
 		svc, err := t.UserService()
 		if err != nil {
-			logger.Println(err.Error())
+			log.Info(err.Error())
 			ErrRes(w, err)
 			return
 		}
 		u, err := svc.ExtractUser()
 		if err != nil {
-			logger.Println(err.Error())
+			log.Info(err.Error())
 			ErrRes(w, err)
 			return
 		}
@@ -134,20 +134,20 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		} else if err := t.User.Save(appDB); err != nil {
 			// create a new user that matches
 			// TODO - better username collision handling
-			logger.Println(err)
+			log.Info(err)
 			if err == ErrUsernameTaken {
 				for i := 1; i < 1000; i++ {
 					t.User.Username = fmt.Sprintf("%s_%d", t.User.Username, i)
 					if err := t.User.Save(appDB); err == nil {
 						break
 					} else if err != ErrUsernameTaken {
-						logger.Println(err.Error())
+						log.Info(err.Error())
 						ErrRes(w, err)
 						return
 					}
 				}
 			} else {
-				logger.Println(err.Error())
+				log.Info(err.Error())
 				ErrRes(w, err)
 				return
 			}
@@ -155,7 +155,7 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if err := t.Save(appDB); err != nil {
-		logger.Println(err.Error())
+		log.Info(err.Error())
 		ErrRes(w, err)
 		return
 	}
@@ -168,7 +168,7 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	if redirect != "" {
 		redirect, err := ValidUrlString(redirect)
 		if err == nil {
-			logger.Println("redirecting to", redirect)
+			log.Info("redirecting to", redirect)
 			http.Redirect(w, r, redirect, http.StatusFound)
 		}
 		return
@@ -179,14 +179,14 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	// client := githubOAuth.Client(ctx, tok)
 	// res, err := client.Get("https://api.github.com/repos/edgi-govdata-archiving/archivers.space/collaborators")
 	// if err != nil {
-	// 	logger.Println(err.Error())
+	// 	log.Info(err.Error())
 	// 	ErrRes(w, err)
 	// 	return
 	// }
 	// defer res.Body.Close()
 	// data, err := ioutil.ReadAll(res.Body)
 	// if err != nil {
-	// 	logger.Println(err.Error())
+	// 	log.Info(err.Error())
 	// 	ErrRes(w, err)
 	// 	return
 	// }

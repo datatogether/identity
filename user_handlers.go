@@ -119,7 +119,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 // func UserConfirmEmailHandler(w http.ResponseWriter, r *http.Request) {
 // 	u := NewUser(stringParam(ctx, "id"))
 // 	u.emailConfirmed = true
-// 	logger.Println(u)
+// 	log.Info(u)
 // 	if err := u.Save(appDB); err != nil {
 // 		ErrRes(w, err)
 // 		return

@@ -61,7 +61,7 @@ func (r *SaveUserRequest) Exec() (interface{}, error) {
 		return nil, ErrAccessDenied
 	}
 
-	logger.Println(r.User.Id, r.Subject.Id, r.User.Id == r.Subject.Id)
+	log.Info(r.User.Id, r.Subject.Id, r.User.Id == r.Subject.Id)
 	if err := r.Subject.Save(appDB); err != nil {
 		return nil, err
 	}

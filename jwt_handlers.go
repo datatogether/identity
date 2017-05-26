@@ -55,7 +55,7 @@ func JwtTokenHandler(w http.ResponseWriter, r *http.Request) {
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, "Sorry, error while Signing Token!")
-		logger.Printf("Token Signing error: %v\n", err)
+		log.Info("Token Signing error: %v\n", err)
 		return
 	}
 

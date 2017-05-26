@@ -171,11 +171,11 @@ func (k *Key) Save(db *sql.DB) error {
 		if err == ErrNotFound {
 			k.Created = time.Now().Unix()
 			if _, e := db.Exec("INSERT INTO keys VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)", k.Type, k.Sha256[:], k.Created, k.LastSeen, k.Name, k.User.Id, k.Public, k.private); e != nil {
-				logger.Println(e.Error())
+				log.Info(e.Error())
 				return NewFmtError(500, e.Error())
 			}
 		} else {
-			logger.Println(err.Error())
+			log.Info(err.Error())
 			return err
 		}
 	} else {

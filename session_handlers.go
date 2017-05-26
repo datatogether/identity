@@ -153,7 +153,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	logger.Printf("user api login: %s", login.Username)
+	log.Info("user api login: %s", login.Username)
 	if err := setUserSessionCookie(w, r, u.Id); err != nil {
 		ErrRes(w, New500Error(err.Error()))
 		return
@@ -179,7 +179,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		if err := u.Read(appDB); err == nil {
-			logger.Printf("logout user: %s", u.Username)
+			log.Info("logout user: %s", u.Username)
 		}
 	}
 

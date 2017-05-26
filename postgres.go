@@ -85,7 +85,7 @@ func initializeDatabase(db *sql.DB) error {
 		"create-keys",
 	} {
 		if _, err := schema.Exec(db, cmd); err != nil {
-			logger.Println(cmd, "error:", err)
+			log.Info(cmd, "error:", err)
 			return err
 		}
 	}

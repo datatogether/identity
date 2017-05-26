@@ -219,12 +219,12 @@ func (u *User) Save(db *sql.DB) error {
 			// create default keypair using newly-minted user
 			key, err := NewKey("default key", u)
 			if err != nil {
-				logger.Println(err.Error())
+				log.Info(err.Error())
 				return err
 			}
 
 			if err = key.Save(db); err != nil {
-				logger.Println(err.Error())
+				log.Info(err.Error())
 				return err
 			}
 
@@ -380,7 +380,7 @@ func (u *User) validateUpdate(db *sql.DB, prev *User) error {
 	}
 
 	if u.Username != prev.Username {
-		// logger.Println(u.Username, prev.Username)
+		// log.Info(u.Username, prev.Username)
 		if taken, err := UsernameTaken(db, u.Username); err != nil {
 			return err
 		} else if taken {

@@ -54,16 +54,16 @@ func (t *UserOauthToken) Save(db *sql.DB) error {
 	if err := prev.Read(db); err != nil {
 		if err == ErrNotFound {
 			if _, err := db.Exec(qUserOauthTokenInsert, t.SQLArgs()...); err != nil {
-				logger.Println(err.Error())
+				log.Info(err.Error())
 				return NewFmtError(500, err.Error())
 			}
 		} else {
-			logger.Println(err.Error())
+			log.Info(err.Error())
 			return err
 		}
 	} else {
 		if _, err := db.Exec(qUserOauthTokenUpdate, t.SQLArgs()...); err != nil {
-			logger.Println(err.Error())
+			log.Info(err.Error())
 			return err
 		}
 	}

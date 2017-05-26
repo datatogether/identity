@@ -52,7 +52,7 @@ func (r *SaveGroupRequest) Exec() (interface{}, error) {
 	// 	return nil, ErrAccessDenied
 	// }
 
-	// logger.Println(r.Group.Id, r.Subject.Id, r.Group.Id == r.Subject.Id)
+	// log.Info(r.Group.Id, r.Subject.Id, r.Group.Id == r.Subject.Id)
 	if err := r.Group.Save(appDB); err != nil {
 		return nil, err
 	}

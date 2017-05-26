@@ -36,7 +36,7 @@ func CreateUserKeyHandler(w http.ResponseWriter, r *http.Request) {
 
 	if isJsonRequest(r) {
 		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			logger.Println(err)
+			log.Info(err)
 			ErrRes(w, err)
 			return
 		}
@@ -47,7 +47,7 @@ func CreateUserKeyHandler(w http.ResponseWriter, r *http.Request) {
 
 	key, err := CreateKey(appDB, u, req.Name, []byte(req.Key))
 	if err != nil {
-		logger.Println(err)
+		log.Info(err)
 		ErrRes(w, err)
 		return
 	}
@@ -64,7 +64,7 @@ func UserKeysHandler(w http.ResponseWriter, r *http.Request) {
 
 	keys, err := u.Keys(appDB)
 	if err != nil {
-		logger.Println(err)
+		log.Info(err)
 		ErrRes(w, err)
 		return
 	}
@@ -94,10 +94,10 @@ func DeleteUserKeyHandler(w http.ResponseWriter, r *http.Request) {
 	// 	sha256[i] = byte(b)
 	// }
 
-	// logger.Println(shaStr, sha256)
+	// log.Info(shaStr, sha256)
 	// key := &UserKey{Sha256: sha256}
 	// if err := key.Delete(appDB); err != nil {
-	// 	logger.Println(err)
+	// 	log.Info(err)
 	// 	ErrRes(w, err)
 	// 	return
 	// }

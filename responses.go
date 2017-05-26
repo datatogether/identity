@@ -9,9 +9,9 @@ import (
 // generic error response handler, BYO response code
 func ErrRes(w http.ResponseWriter, e error) error {
 	if cfg.Environment != TEST_MODE && e != nil {
-		logger.Println(e.Error())
+		log.Info(e.Error())
 		if cfg.Environment == PRODUCTION_MODE {
-			logger.Println(fmt.Sprintf("error: %s\n", e.Error()))
+			log.Info(fmt.Sprintf("error: %s\n", e.Error()))
 		}
 	}
 
@@ -47,7 +47,7 @@ func Res(w http.ResponseWriter, envelope bool, data interface{}) error {
 	w.Header().Set("Content-Type", "application/json")
 	err := json.NewEncoder(w).Encode(data)
 	if err != nil {
-		logger.Println(err)
+		log.Info(err)
 	}
 	return err
 }
