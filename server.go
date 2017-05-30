@@ -47,7 +47,7 @@ func main() {
 
 	sessionStore = sessions.NewCookieStore([]byte(cfg.SessionSecret))
 	if cfg.UserCookieDomain != "" {
-		// sessionStore.Options.Domain = cfg.UserCookieDomain
+		sessionStore.Options.Domain = cfg.UserCookieDomain
 	}
 
 	connectToAppDb()

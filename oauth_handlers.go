@@ -23,8 +23,16 @@ func SessionUserTokensHandler(w http.ResponseWriter, r *http.Request) {
 
 // Check currently logged-in user's access to a provided github repo
 func GithubRepoAccessHandler(w http.ResponseWriter, r *http.Request) {
-	tokens, err := sessionUser(r).OauthTokens(appDB)
+	u := sessionUser(r)
+	if u.anonymous {
+		ErrRes(w, ErrAccessDenied)
+		return
+	}
+
+	log.Infoln(u)
+	tokens, err := u.OauthTokens(appDB)
 	if err != nil {
+		log.Infoln(err.Error())
 		ErrRes(w, err)
 		return
 	}
