@@ -4,7 +4,6 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"github.com/gorilla/sessions"
 	"net"
 	"net/http"
 	"strings"
@@ -38,11 +37,11 @@ func sessionUser(r *http.Request) *User {
 func cookieUser(r *http.Request) *User {
 	// previous verions of ident server didn't make use of a domain
 	// check for this form of cookie, removing it if found
-	if session, err := sessions.NewCookieStore([]byte(cfg.SessionSecret)).Get(r, cfg.UserCookieKey); err == nil {
-		if id, ok := session.Values["id"].(string); ok {
-			return NewUser(id)
-		}
-	}
+	// if session, err := sessions.NewCookieStore([]byte(cfg.SessionSecret)).Get(r, cfg.UserCookieKey); err == nil {
+	// 	if id, ok := session.Values["id"].(string); ok {
+	// 		return NewUser(id)
+	// 	}
+	// }
 
 	if session, err := sessionStore.Get(r, cfg.UserCookieKey); err == nil {
 		if session.Values["id"] != nil {
@@ -176,10 +175,30 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
 	// previous verions of ident server didn't make use of a domain
 	// check for this form of cookie, removing it if found
-	session, err := sessions.NewCookieStore([]byte(cfg.SessionSecret)).Get(r, cfg.UserCookieKey)
-	if err == nil {
-		if id, ok := session.Values["id"].(string); ok {
-			u := NewUser(id)
+	// session, err := sessions.NewCookieStore([]byte(cfg.SessionSecret)).Get(r, cfg.UserCookieKey)
+	// if err == nil {
+	// 	if id, ok := session.Values["id"].(string); ok {
+	// 		u := NewUser(id)
+	// 		session.Values["id"] = nil
+	// 		session.Options.MaxAge = -1
+	// 		if err := session.Save(r, w); err != nil {
+	// 			log.Infoln(err.Error())
+	// 			ErrRes(w, err)
+	// 			return
+	// 		}
+	// 		if err := u.Read(appDB); err == nil {
+	// 			log.Info("logout user: %s", u.Username)
+	// 		}
+	// 		MessageResponse(w, "successfully logged out", nil)
+	// 		return
+	// 	}
+	// }
+
+	session, err := sessionStore.Get(r, cfg.UserCookieKey)
+	if err != nil {
+		if session != nil {
+			// if we have a session, but have errored for some reason,
+			// remove the cookie
 			session.Values["id"] = nil
 			session.Options.MaxAge = -1
 			if err := session.Save(r, w); err != nil {
@@ -187,16 +206,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 				ErrRes(w, err)
 				return
 			}
-			if err := u.Read(appDB); err == nil {
-				log.Info("logout user: %s", u.Username)
-			}
-			MessageResponse(w, "successfully logged out", nil)
-			return
 		}
-	}
-
-	session, err = sessionStore.Get(r, cfg.UserCookieKey)
-	if err != nil {
 		ErrRes(w, err)
 		return
 	}
