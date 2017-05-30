@@ -4,6 +4,7 @@ import (
 	"context"
 	"crypto/subtle"
 	"fmt"
+	"github.com/gorilla/sessions"
 	"net/http"
 	"time"
 )
@@ -34,6 +35,15 @@ func middleware(handler http.HandlerFunc) http.HandlerFunc {
 		// }
 
 		addCORSHeaders(w, r)
+
+		// remove domainless cookie if one is found
+		if cfg.UserCookieDomain != "" {
+			sess, err := sessions.NewCookieStore([]byte(cfg.SessionSecret)).Get(r, cfg.UserCookieKey)
+			if err != nil {
+				sess.Options.MaxAge = -1
+				sess.Save(r, w)
+			}
+		}
 
 		ctx := r.Context()
 		u, _ := userFromRequest(appDB, r)
