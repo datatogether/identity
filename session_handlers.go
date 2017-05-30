@@ -35,14 +35,6 @@ func sessionUser(r *http.Request) *User {
 }
 
 func cookieUser(r *http.Request) *User {
-	// previous verions of ident server didn't make use of a domain
-	// check for this form of cookie, removing it if found
-	// if session, err := sessions.NewCookieStore([]byte(cfg.SessionSecret)).Get(r, cfg.UserCookieKey); err == nil {
-	// 	if id, ok := session.Values["id"].(string); ok {
-	// 		return NewUser(id)
-	// 	}
-	// }
-
 	if session, err := sessionStore.Get(r, cfg.UserCookieKey); err == nil {
 		if session.Values["id"] != nil {
 			if id, ok := session.Values["id"].(string); ok {
@@ -127,10 +119,7 @@ func setUserSessionCookie(w http.ResponseWriter, r *http.Request, id string) err
 		if session != nil {
 			// if we still get a session object back
 			// clear the cookie, b/c this one clearly doesn't work
-			// session.Options.MaxAge = -1
-			// if err := session.Save(r, w); err != nil {
-			// 	log.Infoln("setUserSessionCookie save empty cookie error", err.Error())
-			// }
+			session.Options.MaxAge = -1
 		}
 	}
 	session.Values["id"] = id
