@@ -23,3 +23,8 @@ func CORSHandler(w http.ResponseWriter, r *http.Request) {
 func CertbotHandler(w http.ResponseWriter, r *http.Request) {
 	io.WriteString(w, cfg.CertbotResponse)
 }
+
+func NotFoundHandler(w http.ResponseWriter, r *http.Request) {
+	w.WriteHeader(http.StatusNotFound)
+	w.Write([]byte(`{ "status" : 404, "message" : "Not Found" }`))
+}

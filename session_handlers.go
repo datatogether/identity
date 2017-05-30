@@ -49,6 +49,8 @@ func cookieUser(r *http.Request) *User {
 				return NewUser(id)
 			}
 		}
+	} else {
+		log.Infoln(err.Error())
 	}
 	return nil
 }
@@ -78,15 +80,14 @@ func userFromRequest(db *sql.DB, r *http.Request) (*User, error) {
 
 	u = tokenUser(r)
 	if u == nil {
-		u = cookieUser(r)
-	}
-	if u == nil {
 		u, err = jwtUser(db, r)
 		if err != nil {
 			// logger.Println(err.Error())
 		}
 	}
-
+	if u == nil {
+		u = cookieUser(r)
+	}
 	if u == nil {
 		// create anononymous user with ip address
 		return &User{
@@ -121,6 +122,15 @@ func getIP(r *http.Request) string {
 func setUserSessionCookie(w http.ResponseWriter, r *http.Request, id string) error {
 	session, err := sessionStore.Get(r, cfg.UserCookieKey)
 	if err != nil {
+		log.Infoln("setUserSessionCookie error", err.Error())
+		if session != nil {
+			// if we still get a session object back
+			// clear the cookie, b/c this one clearly doesn't work
+			session.Options.MaxAge = -1
+			if err := session.Save(r, w); err != nil {
+				log.Infoln("setUserSessionCookie save empty cookie error", err.Error())
+			}
+		}
 		return err
 	}
 	session.Values["id"] = id
@@ -146,7 +156,9 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if isJsonRequest(r) {
 		if err := json.NewDecoder(r.Body).Decode(&login); err != nil {
-			ErrRes(w, NewFmtError(http.StatusBadRequest, "error parsing json: '%s'", err.Error()))
+			e := NewFmtError(http.StatusBadRequest, "error parsing json: '%s'", err.Error())
+			log.Infoln(e)
+			ErrRes(w, e)
 			return
 		}
 	} else {
@@ -157,72 +169,46 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	u, err := AuthenticateUser(appDB, login.Username, login.Password)
 	if err != nil {
+		log.Infoln(ErrInvalidUserNamePasswordCombo)
 		ErrRes(w, ErrInvalidUserNamePasswordCombo)
 		return
 	}
 
-	log.Info("user api login: %s", login.Username)
 	if err := setUserSessionCookie(w, r, u.Id); err != nil {
+		log.Infoln(err)
 		ErrRes(w, New500Error(err.Error()))
 		return
 	}
 
+	log.Infof("user api login: %s", login.Username)
 	Res(w, true, u)
 }
 
 // logout a user, overwriting their session cookie with ""
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 
-	// previous verions of ident server didn't make use of a domain
-	// check for this form of cookie, removing it if found
-	// session, err := sessions.NewCookieStore([]byte(cfg.SessionSecret)).Get(r, cfg.UserCookieKey)
-	// if err == nil {
-	// 	if id, ok := session.Values["id"].(string); ok {
-	// 		u := NewUser(id)
-	// 		session.Values["id"] = nil
-	// 		session.Options.MaxAge = -1
-	// 		if err := session.Save(r, w); err != nil {
-	// 			log.Infoln(err.Error())
-	// 			ErrRes(w, err)
-	// 			return
-	// 		}
-	// 		if err := u.Read(appDB); err == nil {
-	// 			log.Info("logout user: %s", u.Username)
-	// 		}
-	// 		MessageResponse(w, "successfully logged out", nil)
-	// 		return
-	// 	}
-	// }
-
 	session, err := sessionStore.Get(r, cfg.UserCookieKey)
 	if err != nil {
-		if session != nil {
-			// if we have a session, but have errored for some reason,
-			// remove the cookie
-			session.Values["id"] = nil
-			session.Options.MaxAge = -1
-			if err := session.Save(r, w); err != nil {
-				log.Infoln(err.Error())
-				ErrRes(w, err)
-				return
+		log.Infof("session get user error", err.Error())
+	} else {
+		if id, ok := session.Values["id"].(string); ok {
+			u := NewUser(id)
+			if err := u.Read(appDB); err == nil {
+				log.Info("logout user: %s", u.Username)
 			}
 		}
-		ErrRes(w, err)
-		return
 	}
 
-	if id, ok := session.Values["id"].(string); ok {
-		u := NewUser(id)
+	// regardless of what happens in relation to errors
+	// if we have a session object, clear it.
+	if session != nil {
 		session.Values["id"] = nil
 		session.Options.MaxAge = -1
-		if err := session.Save(r, w); err != nil {
-			log.Infoln(err.Error())
-			ErrRes(w, err)
-			return
-		}
-		if err := u.Read(appDB); err == nil {
-			log.Info("logout user: %s", u.Username)
-		}
+	}
+	if err := session.Save(r, w); err != nil {
+		log.Infoln(err.Error())
+		ErrRes(w, err)
+		return
 	}
 
 	MessageResponse(w, "successfully logged out", nil)
