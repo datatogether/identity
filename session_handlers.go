@@ -120,18 +120,18 @@ func getIP(r *http.Request) string {
 
 // set a user's session cookie so we can track them
 func setUserSessionCookie(w http.ResponseWriter, r *http.Request, id string) error {
+	log.Infoln("set user cookie:", id)
 	session, err := sessionStore.Get(r, cfg.UserCookieKey)
 	if err != nil {
 		log.Infoln("setUserSessionCookie error", err.Error())
 		if session != nil {
 			// if we still get a session object back
 			// clear the cookie, b/c this one clearly doesn't work
-			session.Options.MaxAge = -1
-			if err := session.Save(r, w); err != nil {
-				log.Infoln("setUserSessionCookie save empty cookie error", err.Error())
-			}
+			// session.Options.MaxAge = -1
+			// if err := session.Save(r, w); err != nil {
+			// 	log.Infoln("setUserSessionCookie save empty cookie error", err.Error())
+			// }
 		}
-		return err
 	}
 	session.Values["id"] = id
 	return session.Save(r, w)
@@ -141,7 +141,7 @@ func GetSessionHandler(w http.ResponseWriter, r *http.Request) {
 	u := sessionUser(r)
 	envelope := r.FormValue("envelope") != "false"
 	if u == nil || u.Id == "" {
-		w.WriteHeader(http.StatusUnauthorized)
+		ErrRes(w, NewFmtError(http.StatusUnauthorized, "unauthorized"))
 		return
 	} else {
 		Res(w, envelope, u)
@@ -176,8 +176,8 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 	if err := setUserSessionCookie(w, r, u.Id); err != nil {
 		log.Infoln(err)
-		ErrRes(w, New500Error(err.Error()))
-		return
+		// ErrRes(w, New500Error(err.Error()))
+		// return
 	}
 
 	log.Infof("user api login: %s", login.Username)
