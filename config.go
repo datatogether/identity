@@ -89,9 +89,13 @@ func initConfig(mode string) (cfg *config, err error) {
 
 	if path := configFilePath(mode, cfg); path != "" {
 		log.Infof("loading config file: %s", filepath.Base(path))
-		conf.Load(cfg, path)
+		if err := conf.Load(cfg, path); err != nil {
+			log.Info("error loading config:", err)
+		}
 	} else {
-		conf.Load(cfg)
+		if err := conf.Load(cfg); err != nil {
+			log.Info("error loading config:", err)
+		}
 	}
 
 	// make sure port is set
