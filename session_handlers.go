@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/gorilla/sessions"
 	"net"
 	"net/http"
 	"strings"
@@ -164,7 +165,29 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 
 // logout a user, overwriting their session cookie with ""
 func LogoutHandler(w http.ResponseWriter, r *http.Request) {
-	session, err := sessionStore.Get(r, cfg.UserCookieKey)
+
+	// previous verions of ident server didn't make use of a domain
+	// check for this form of cookie, removing it if found
+	session, err := sessions.NewCookieStore([]byte(cfg.SessionSecret)).Get(r, cfg.UserCookieKey)
+	if err == nil {
+		if id, ok := session.Values["id"].(string); ok {
+			u := NewUser(id)
+			session.Values["id"] = nil
+			session.Options.MaxAge = -1
+			if err := session.Save(r, w); err != nil {
+				log.Infoln(err.Error())
+				ErrRes(w, err)
+				return
+			}
+			if err := u.Read(appDB); err == nil {
+				log.Info("logout user: %s", u.Username)
+			}
+			MessageResponse(w, "successfully logged out", nil)
+			return
+		}
+	}
+
+	session, err = sessionStore.Get(r, cfg.UserCookieKey)
 	if err != nil {
 		ErrRes(w, err)
 		return
@@ -175,6 +198,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		session.Values["id"] = nil
 		session.Options.MaxAge = -1
 		if err := session.Save(r, w); err != nil {
+			log.Infoln(err.Error())
 			ErrRes(w, err)
 			return
 		}

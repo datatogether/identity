@@ -37,9 +37,6 @@ type config struct {
 	// url of postgres app db. required.
 	PostgresDbUrl string
 
-	// secret for encrypted session cookies. required.
-	SessionSecret string
-
 	// Private Key to use for signing thinks like JWTs
 	// to create: openssl genrsa -out app.rsa keysize
 	PrivateKey string
@@ -55,6 +52,8 @@ type config struct {
 	// a user-friendly URL to redirect to
 	FrontendUrl string
 
+	// secret for encrypted session cookies. required.
+	SessionSecret string
 	// Key to store user's cookie under
 	UserCookieKey string
 	// domain to attach cookie to.
