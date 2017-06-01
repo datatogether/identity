@@ -31,41 +31,44 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 
 func SingleUserHandler(w http.ResponseWriter, r *http.Request) {
 	envelope := r.FormValue("envelope") != "false"
-	req := &UserRequest{
+	p := &UsersGetParams{
 		Subject: &User{
 			Id:          r.FormValue("id"),
 			Username:    r.FormValue("username"),
 			accessToken: r.FormValue("access_token"),
 		},
 	}
-	ExecRequest(w, envelope, req)
+	res := &User{}
+	if err := new(Users).Get(p, res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+	Res(w, envelope, res)
 }
 
 // list users or get a single user if supplied with a "username" formValue
 func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
-	var req Request
 	envelope := r.FormValue("envelope") != "false"
 	username := r.FormValue("username")
 	id := r.FormValue("id")
 
 	if username != "" || id != "" {
-		req = &UserRequest{
-			Interface: httpApiInterface,
-			User:      sessionUser(r),
-			Subject: &User{
-				Id:       id,
-				Username: username,
-			},
-		}
+		SingleUserHandler(w, r)
+		return
 	} else {
-		req = &UsersRequest{
-			Interface: httpApiInterface,
-			User:      sessionUser(r),
-			Page:      PageFromRequest(r),
+		p := &UsersListParams{
+			User: sessionUser(r),
+			Page: PageFromRequest(r),
 		}
+		res := []*User{}
+		if err := new(Users).List(p, &res); err != nil {
+			ErrRes(w, err)
+			return
+		}
+		Res(w, envelope, res)
 	}
 
-	ExecRequest(w, envelope, req)
+	// ExecRequest(w, envelope, req)
 }
 
 // Create a user from the api, feed password in as a query param
@@ -95,13 +98,12 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		u.password = r.FormValue("password")
 	}
 
-	req := &CreateUserRequest{
-		Interface: httpApiInterface,
-		User:      u,
+	p := &UsersCreateParams{
+		User: u,
 	}
 
-	_, err := req.Exec()
-	if err != nil {
+	res := &User{}
+	if err := new(Users).Create(p, res); err != nil {
 		ErrRes(w, err)
 		return
 	}
@@ -112,7 +114,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Res(w, true, u)
+	Res(w, true, res)
 }
 
 // confirm a user's email address
@@ -145,23 +147,33 @@ func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
 		// TODO - fill user out from form values
 	}
 
-	req := &SaveUserRequest{
-		// Interface: httpApiInterface,
+	p := &UsersSaveParams{
 		User:    sessionUser(r),
 		Subject: u,
 	}
 
-	ExecRequest(w, true, req)
+	res := &User{}
+	if err := new(Users).Save(p, res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+
+	Res(w, true, res)
 }
 
 func UsersSearchHandler(w http.ResponseWriter, r *http.Request) {
-	req := &UsersSearchRequest{
+	p := &UsersSearchParams{
 		User:  sessionUser(r),
 		Query: r.FormValue("q"),
 		Page:  PageFromRequest(r),
 	}
 
-	ExecRequest(w, true, req)
+	res := []*User{}
+	if err := new(Users).Search(p, &res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+	Res(w, true, res)
 }
 
 // delete a user

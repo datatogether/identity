@@ -4,78 +4,94 @@ import (
 	"strings"
 )
 
+// Users holds all types of requests for users
+// it's based on an int b/c it's stateless and Go lets us
+// do this sort of thing
+type Users int
+
 // UsersRequest defines a request for users, outlining all possible
 // options for scoping & shaping the desired response
-type UsersRequest struct {
-	Interface string
+type UsersListParams struct {
 	// the user performing the request
 	User *User `required:"true"`
 	// users requests embeds pagination info
 	Page
 }
 
-func (r *UsersRequest) Exec() (interface{}, error) {
-	return ReadUsers(appDB, r.Page)
-}
-
-type UserRequest struct {
-	Interface string
-	User      *User
-	Subject   *User
-}
-
-func (r *UserRequest) Exec() (interface{}, error) {
-	if err := r.Subject.Read(appDB); err != nil {
-		return nil, err
-	}
-	return r.Subject, nil
-}
-
-type CreateUserRequest struct {
-	Interface string
-	User      *User
-}
-
-func (r *CreateUserRequest) Exec() (interface{}, error) {
-	if strings.TrimSpace(r.User.password) == "" {
-		return nil, ErrPasswordRequired
-	}
-	if strings.TrimSpace(r.User.Email) == "" {
-		return nil, ErrEmailRequired
+func (Users) List(p *UsersListParams, res *[]*User) error {
+	users, err := ReadUsers(appDB, p.Page)
+	if err != nil {
+		return err
 	}
 
-	if err := r.User.Save(appDB); err != nil {
-		return nil, err
-	}
-	return r.User, nil
+	*res = users
+	return nil
 }
 
-type SaveUserRequest struct {
-	Interface string
-	User      *User
-	Subject   *User
+type UsersGetParams struct {
+	User    *User
+	Subject *User
 }
 
-func (r *SaveUserRequest) Exec() (interface{}, error) {
-	if !r.User.isAdmin && r.User.Id != r.Subject.Id {
-		return nil, ErrAccessDenied
+func (Users) Get(p *UsersGetParams, res *User) error {
+	if err := p.Subject.Read(appDB); err != nil {
+		return err
 	}
 
-	log.Info(r.User.Id, r.Subject.Id, r.User.Id == r.Subject.Id)
-	if err := r.Subject.Save(appDB); err != nil {
-		return nil, err
-	}
-
-	return r.Subject, nil
+	*res = *p.Subject
+	return nil
 }
 
-type UsersSearchRequest struct {
-	Interface string
-	User      *User
-	Query     string
+type UsersCreateParams struct {
+	User *User
+}
+
+func (Users) Create(p *UsersCreateParams, res *User) error {
+	if strings.TrimSpace(p.User.password) == "" {
+		return ErrPasswordRequired
+	}
+	if strings.TrimSpace(p.User.Email) == "" {
+		return ErrEmailRequired
+	}
+
+	if err := p.User.Save(appDB); err != nil {
+		return err
+	}
+
+	*res = *p.User
+	return nil
+}
+
+type UsersSaveParams struct {
+	User    *User
+	Subject *User
+}
+
+func (Users) Save(p *UsersSaveParams, res *User) error {
+	if !p.User.isAdmin && p.User.Id != p.Subject.Id {
+		return ErrAccessDenied
+	}
+
+	if err := p.Subject.Save(appDB); err != nil {
+		return err
+	}
+
+	*res = *p.Subject
+	return nil
+}
+
+type UsersSearchParams struct {
+	User  *User
+	Query string
 	Page
 }
 
-func (r *UsersSearchRequest) Exec() (interface{}, error) {
-	return UsersSearch(appDB, r.Query, r.Page.Size, r.Page.Offset())
+func (Users) Search(p *UsersSearchParams, res *[]*User) error {
+	users, err := UsersSearch(appDB, p.Query, p.Page.Size, p.Page.Offset())
+	if err != nil {
+		return err
+	}
+
+	*res = users
+	return nil
 }
