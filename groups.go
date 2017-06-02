@@ -4,7 +4,7 @@ import (
 	"database/sql"
 )
 
-func Groups(db sqlQueryable, limit, offset int) ([]*Group, error) {
+func ListGroups(db sqlQueryable, limit, offset int) ([]*Group, error) {
 	rows, err := db.Query(qGroups, limit, offset)
 	if err != nil {
 		return nil, err

@@ -37,26 +37,37 @@ func GroupHandler(w http.ResponseWriter, r *http.Request) {
 
 func ReadGroupHandler(w http.ResponseWriter, r *http.Request) {
 	envelope := r.FormValue("envelope") != "false"
-	req := &GroupRequest{
+	p := &GroupsGetParams{
 		Group: &Group{
 			Id: r.FormValue("id"),
 		},
 	}
-	ExecRequest(w, envelope, req)
+
+	res := &Group{}
+	if err := new(Groups).Get(p, res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+
+	Res(w, envelope, res)
 }
 
 // list users or get a single user if supplied with a "username" formValue
 func ListGroupsHandler(w http.ResponseWriter, r *http.Request) {
-	var req Request
 	envelope := r.FormValue("envelope") != "false"
 
-	req = &GroupsRequest{
-		Interface: httpApiInterface,
-		User:      sessionUser(r),
-		Page:      PageFromRequest(r),
+	p := &GroupsListParams{
+		User: sessionUser(r),
+		Page: PageFromRequest(r),
 	}
 
-	ExecRequest(w, envelope, req)
+	res := []*Group{}
+	if err := new(Groups).List(p, &res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+
+	Res(w, envelope, res)
 }
 
 // SaveGroupHandler updates a user
@@ -77,23 +88,33 @@ func SaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	g.Creator = sess
-	req := &SaveGroupRequest{
-		Interface: httpApiInterface,
-		User:      sess,
-		Group:     g,
+	p := &GroupsSaveParams{
+		User:  sess,
+		Group: g,
+	}
+	res := &Group{}
+	if err := new(Groups).Save(p, res); err != nil {
+		ErrRes(w, err)
+		return
 	}
 
-	ExecRequest(w, true, req)
+	Res(w, true, res)
 }
 
 // delete a user
 func DeleteGroupHandler(w http.ResponseWriter, r *http.Request) {
-	req := &DeleteGroupRequest{
+	var res bool
+	p := &GroupsDeleteParams{
 		User: sessionUser(r),
 		Group: &Group{
 			Id: r.FormValue("id"),
 		},
 	}
 
-	ExecRequest(w, true, req)
+	if err := new(Groups).Delete(p, &res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+
+	Res(w, true, res)
 }
