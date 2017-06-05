@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/archivers-space/identity/user"
+	"github.com/archivers-space/identity/oauth"
 	"github.com/archivers-space/sqlutil"
 	"github.com/sirupsen/logrus"
 	"net/http"
@@ -45,7 +45,7 @@ func main() {
 	if err = initKeys(cfg); err != nil {
 		panic(fmt.Errorf("server keys error: %s", err.Error()))
 	}
-	user.InitOauth(cfg.GithubAppId, cfg.GithubAppSecret)
+	oauth.InitOauth(cfg.GithubAppId, cfg.GithubAppSecret)
 
 	sessionStore = sessions.NewCookieStore([]byte(cfg.SessionSecret))
 	if cfg.UserCookieDomain != "" {

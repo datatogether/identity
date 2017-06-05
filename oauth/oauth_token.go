@@ -1,26 +1,36 @@
-package user
+package oauth
 
 import (
 	"database/sql"
 	"github.com/archivers-space/errors"
+	"github.com/archivers-space/identity/user"
 	"github.com/archivers-space/sqlutil"
 	"golang.org/x/oauth2"
 	"time"
 )
 
 type UserOauthToken struct {
-	User    *User
+	User    *user.User
 	Service string
 	Token   *oauth2.Token
 }
 
-func (t *UserOauthToken) ReadUser(db *sql.DB) (*User, error) {
+func UserOauthTokens(db sqlutil.Queryable, u *user.User) ([]*UserOauthToken, error) {
+	res, err := db.Query(qUserOauthTokensForUser, u.Id)
+	if err != nil {
+		return nil, err
+	}
+
+	return UnmarshalTokens(res)
+}
+
+func (t *UserOauthToken) ReadUser(db sqlutil.Queryable) (*user.User, error) {
 	row, err := db.Query(qUserOauthTokenUser, t.Service, t.Token)
 	if err != nil {
 		return nil, err
 	}
 
-	u := &User{}
+	u := &user.User{}
 	if err := u.UnmarshalSQL(row); err != nil {
 		return nil, err
 	}
@@ -37,20 +47,20 @@ func (t *UserOauthToken) ReadUser(db *sql.DB) (*User, error) {
 // 	}
 // }
 
-func (g *UserOauthToken) Read(db *sql.DB) error {
+func (t *UserOauthToken) Read(db sqlutil.Queryable) error {
 	// first try to read by token id
-	if g.Token != nil {
-		if err := g.UnmarshalSQL(db.QueryRow(qUserOauthTokenByAccessToken, g.Token.AccessToken)); err == nil {
+	if t.Token != nil {
+		if err := t.UnmarshalSQL(db.QueryRow(qUserOauthTokenByAccessToken, t.Token.AccessToken)); err == nil {
 			return nil
 		}
 	}
-	if g.User == nil || g.Service == "" {
+	if t.User == nil || t.Service == "" {
 		return errors.ErrNotFound
 	}
-	return g.UnmarshalSQL(db.QueryRow(qUserOauthTokenByUserAndService, g.User.Id, g.Service))
+	return t.UnmarshalSQL(db.QueryRow(qUserOauthTokenByUserAndService, t.User.Id, t.Service))
 }
 
-func (t *UserOauthToken) Save(db *sql.DB) error {
+func (t *UserOauthToken) Save(db sqlutil.Execable) error {
 	prev := &UserOauthToken{User: t.User, Service: t.Service}
 	if err := prev.Read(db); err != nil {
 		if err == errors.ErrNotFound {
@@ -92,7 +102,7 @@ func (g *UserOauthToken) UnmarshalSQL(row sqlutil.Scannable) error {
 	}
 
 	tok := &UserOauthToken{
-		User:    &User{Id: userId},
+		User:    &user.User{Id: userId},
 		Service: service,
 		Token: &oauth2.Token{
 			AccessToken:  access,

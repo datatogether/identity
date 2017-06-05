@@ -72,15 +72,6 @@ func NewUserFromString(s string) *User {
 	return &User{}
 }
 
-func (u *User) OauthTokens(db sqlutil.Queryable) ([]*UserOauthToken, error) {
-	res, err := db.Query(qUserOauthTokensForUser, u.Id)
-	if err != nil {
-		return nil, err
-	}
-
-	return UnmarshalTokens(res)
-}
-
 func userColumns() string {
 	return "id, created, updated, username, type, name, description, home_url, email, current_key, email_confirmed, is_admin"
 }

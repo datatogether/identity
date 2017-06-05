@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"github.com/archivers-space/identity/oauth"
 	"github.com/archivers-space/identity/user"
 	"golang.org/x/oauth2"
 	"net/http"
@@ -15,7 +16,7 @@ type Github struct {
 
 func NewGithub(token *oauth2.Token) Github {
 	return Github{
-		client: user.GithubOAuth.Client(context.Background(), token),
+		client: oauth.GithubOAuth.Client(context.Background(), token),
 	}
 }
 

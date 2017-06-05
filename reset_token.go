@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/archivers-space/identity/user"
 	"github.com/archivers-space/sqlutil"
+	"github.com/pborman/uuid"
 	"strings"
 	"time"
 )
@@ -26,7 +27,7 @@ func resetTokenColumns() string {
 func CreateResetToken(db sqlutil.Execable, email string) (*ResetToken, error) {
 	now := time.Now().Unix()
 	t := &ResetToken{
-		Id:      NewUuid(),
+		Id:      uuid.New(),
 		Created: now,
 		Updated: now,
 		Email:   email,

@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/archivers-space/identity/oauth"
 	"github.com/archivers-space/identity/user"
 	"golang.org/x/oauth2"
 	"net/http"
@@ -11,7 +12,7 @@ import (
 
 // Return all Token types for the currently logged-in user
 func SessionUserTokensHandler(w http.ResponseWriter, r *http.Request) {
-	tokens, err := sessionUser(r).OauthTokens(appDB)
+	tokens, err := oauth.UserOauthTokens(appDB, sessionUser(r))
 	if err != nil {
 		ErrRes(w, err)
 		return
@@ -30,8 +31,7 @@ func GithubRepoAccessHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	log.Infoln(u)
-	tokens, err := u.OauthTokens(appDB)
+	tokens, err := oauth.UserOauthTokens(appDB, u)
 	if err != nil {
 		log.Infoln(err.Error())
 		ErrRes(w, err)
@@ -39,7 +39,7 @@ func GithubRepoAccessHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, t := range tokens {
-		if t.Service == user.OauthServiceGithub {
+		if t.Service == oauth.OauthServiceGithub {
 			g := NewGithub(t.Token)
 			info, err := g.CurrentUserInfo()
 			if err != nil {
@@ -80,7 +80,7 @@ func GithubOauthHandler(w http.ResponseWriter, r *http.Request) {
 		redirect = cfg.UrlRoot
 	}
 	b64 := base64.StdEncoding.EncodeToString([]byte(redirect))
-	url := user.GithubOAuth.AuthCodeURL(b64, oauth2.AccessTypeOffline)
+	url := oauth.GithubOAuth.AuthCodeURL(b64, oauth2.AccessTypeOffline)
 	// log.Info("Visit the URL for the auth dialog: %v", url)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
@@ -100,14 +100,14 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	redirect := string(redirectBytes)
 
 	code := r.FormValue("code")
-	tok, err := user.GithubOAuth.Exchange(ctx, code)
+	tok, err := oauth.GithubOAuth.Exchange(ctx, code)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	t := &user.UserOauthToken{
+	t := &oauth.UserOauthToken{
 		User:    u,
-		Service: user.OauthServiceGithub,
+		Service: oauth.OauthServiceGithub,
 		Token:   tok,
 	}
 

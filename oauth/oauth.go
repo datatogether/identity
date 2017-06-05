@@ -1,6 +1,7 @@
-package user
+package oauth
 
 import (
+	"github.com/archivers-space/identity/user"
 	"golang.org/x/oauth2"
 )
 
@@ -10,7 +11,7 @@ const (
 
 type OauthUserService interface {
 	CurrentUserInfo() (map[string]interface{}, error)
-	ExtractUser() (*User, error)
+	ExtractUser() (*user.User, error)
 }
 
 var (
