@@ -1,3 +1,100 @@
+package user
+
+import (
+	"database/sql"
+	"github.com/archivers-space/sqlutil"
+	_ "github.com/lib/pq"
+	"os"
+	"testing"
+)
+
+var testDB *sql.DB
+
+func TestMain(m *testing.M) {
+	var err error
+	if os.Getenv("POSTGRES_DB_URL") == "" {
+		panic("POSTGRES_DB_URL must be defined")
+	}
+
+	ts, err := sqlutil.InitTestSuite(&sqlutil.TestSuiteOpts{
+		DriverName:      "postgres",
+		ConnString:      os.Getenv("POSTGRES_DB_URL"),
+		SchemaSqlString: schema,
+		DataSqlString:   testData,
+		Cascade: []string{
+			"users",
+			"oauth_tokens",
+			"keys",
+			"reset_tokens",
+		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+	testDB = ts.DB
+
+	retCode := m.Run()
+	os.Exit(retCode)
+}
+
+const schema = `
+-- name: drop-all
+DROP TABLE IF EXISTS user_keys, oauth_users, oauth_tokens, keys, users, reset_tokens, groups, group_users CASCADE;
+
+-- name: create-users
+CREATE TABLE users (
+  id                 UUID PRIMARY KEY,
+  created            integer NOT NULL,
+  updated            integer NOT NULL,
+  username           text UNIQUE NOT NULL,
+  type               integer NOT NULL,
+  password_hash      bytea NOT NULL,
+  email              text UNIQUE NOT NULL,
+  name               text default '',
+  description        text default '',
+  home_url           text default '',
+  email_confirmed    boolean DEFAULT false,
+  is_admin           boolean DEFAULT false,
+  current_key        text NOT NULL default '',
+  access_token       text UNIQUE NOT NULL,
+  deleted            boolean DEFAULT false
+);
+
+-- name: create-oauth_tokens
+CREATE TABLE oauth_tokens (
+  user_id            UUID NOT NULL references users(id),
+  service            text NOT NULL DEFAULT '',
+  access_token       text NOT NULL DEFAULT '',
+  token_type         text NOT NULL DEFAULT 'Bearer',
+  refresh_token      text NOT NULL DEFAULT '',
+  expiry             timestamp,
+  PRIMARY KEY        (user_id, service)
+);
+
+-- name: create-keys
+CREATE TABLE keys (
+  type               text NOT NULL,
+  sha_256            bytea PRIMARY KEY,
+  created            integer NOT NULL,
+  last_seen          integer NOT NULL,
+  name               text,
+  user_id            UUID NOT NULL,
+  public_bytes       bytea NOT NULL,
+  private_bytes      bytea,
+  deleted            boolean DEFAULT false
+);
+
+-- name: create-reset_tokens
+CREATE TABLE reset_tokens (
+  id                 UUID PRIMARY KEY,
+  created            integer NOT NULL,
+  updated            integer NOT NULL,
+  email              text NOT NULL,
+  used               boolean DEFAULT false
+);
+`
+const testData = `
 -- name: delete-users
 delete from users;
 -- name: insert-users
@@ -24,18 +121,8 @@ INSERT INTO keys VALUES
   -- type, sha_256, created, last_seen, name, user_id, public_bytes, private_bytes, deleted
   ('rsa', '\x',1464282748,1464282748,'stuff','61e91231-c7cc-47b4-b392-89fb180a7570', '\x', '\x', false);
 
-
 -- name: delete-oauth_tokens
 DELETE FROM oauth_tokens;
 -- name: insert-oauth_tokens
 -- INSERT INTO oauth_tokens VALUES ();
-
--- name: delete-groups
-DELETE FROM groups;
--- name: insert-groups
--- INSERT INTO groups VALUES ();
-
--- name: delete-group_users
-DELETE FROM group_users;
--- name: insert-group_users
--- INSERT INTO group_users VALUES ();
+`

@@ -3,6 +3,7 @@ package reset_token
 import (
 	"database/sql"
 	"fmt"
+	"github.com/archivers-space/errors"
 	"github.com/archivers-space/identity/user"
 	"github.com/archivers-space/sqlutil"
 	"github.com/pborman/uuid"
@@ -39,7 +40,7 @@ func CreateResetToken(db sqlutil.Execable, email string) (*ResetToken, error) {
 	}
 
 	if _, err := db.Exec("INSERT INTO reset_tokens VALUES ($1, $2, $3, $4, $5)", t.Id, t.Created, t.Updated, t.Email, t.Used); err != nil {
-		return t, NewFmtError(500, err.Error())
+		return t, errors.NewFmtError(500, err.Error())
 	}
 
 	return t, nil
@@ -49,7 +50,7 @@ func CreateResetToken(db sqlutil.Execable, email string) (*ResetToken, error) {
 func (r *ResetToken) validate(db sqlutil.Queryable) error {
 	r.Email = strings.TrimSpace(r.Email)
 	if r.Email == "" {
-		return ErrEmailRequired
+		return errors.ErrEmailRequired
 	}
 	// if !emailRegex.MatchString(r.Email) {
 	// 	return ErrInvalidEmail
@@ -57,9 +58,9 @@ func (r *ResetToken) validate(db sqlutil.Queryable) error {
 
 	var exists bool
 	if err := db.QueryRow("SELECT exists(SELECT 1 FROM users WHERE email = $1)", r.Email).Scan(&exists); err != nil {
-		return New500Error(err.Error())
+		return errors.New500Error(err.Error())
 	} else if !exists {
-		return ErrEmailDoesntExist
+		return errors.ErrEmailDoesntExist
 	}
 
 	return nil
@@ -68,7 +69,7 @@ func (r *ResetToken) validate(db sqlutil.Queryable) error {
 // read a token
 func (t *ResetToken) Read(db *sql.DB) error {
 	if t.Id == "" {
-		return ErrNotFound
+		return errors.ErrNotFound
 	}
 
 	token, err := serializeResetToken(db.QueryRow(fmt.Sprintf("SELECT %s FROM reset_tokens WHERE id=$1", resetTokenColumns()), t.Id))
@@ -84,12 +85,12 @@ func (t *ResetToken) Read(db *sql.DB) error {
 // returns an error
 func (r *ResetToken) Usable() error {
 	if r.Used {
-		return ErrTokenAlreadyUsed
+		return errors.ErrTokenAlreadyUsed
 	}
 	// tokens expire after two days, or if a created date isn't found
 	// TODO - should no created value return not found?
 	if r.Created == 0 || time.Now().Sub(time.Unix(r.Created, 0)) > time.Hour*48 {
-		return ErrTokenExpired
+		return errors.ErrTokenExpired
 	}
 
 	return nil
@@ -115,7 +116,7 @@ func (r *ResetToken) Consume(db sqlutil.Execable, password string) (*user.User, 
 	r.Updated = time.Now().Unix()
 	r.Used = true
 	if _, err := db.Exec("UPDATE reset_tokens SET updated=$2, used=true WHERE id=$1", r.Id, r.Updated); err != nil {
-		return u, New500Error(err.Error())
+		return u, errors.New500Error(err.Error())
 	}
 
 	return u, nil
@@ -131,7 +132,7 @@ func serializeResetToken(row sqlutil.Scannable) (*ResetToken, error) {
 
 	if err := row.Scan(&id, &created, &updated, &email, &used); err != nil {
 		if err == sql.ErrNoRows {
-			return nil, ErrNotFound
+			return nil, errors.ErrNotFound
 		}
 		return nil, err
 	}

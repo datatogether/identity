@@ -4,7 +4,6 @@ package sqlutil
 import (
 	"database/sql"
 	"fmt"
-	"github.com/gchaincl/dotsql"
 	"time"
 )
 
@@ -32,7 +31,7 @@ type Transactable interface {
 	Begin() (*sql.Tx, error)
 }
 
-// Uniform Database
+// Uniform Database connector
 func ConnectToDb(driverName, url string, db *sql.DB) error {
 	for i := 0; i < 1000; i++ {
 		conn, err := SetupConnection(driverName, url)
@@ -60,21 +59,6 @@ func SetupConnection(driverName, connString string) (db *sql.DB, err error) {
 		return
 	}
 	return
-}
-
-type DataFile struct {
-	file *dotsql.DotSql
-}
-
-func LoadDataFile(sqlFilePath string) (*DataFile, error) {
-	f, err := dotsql.LoadFromFile(sqlFilePath)
-	if err != nil {
-		return nil, err
-	}
-
-	return &DataFile{
-		file: f,
-	}, nil
 }
 
 // drops test data tables & re-inserts base data from sql/test_data.sql, based on

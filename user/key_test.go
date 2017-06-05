@@ -43,7 +43,7 @@ func generateTestPublicKey() []byte {
 // 	}
 
 // 	for i, c := range cases {
-// 		key, got := CreateKey(appDB, c.user, c.name, c.key)
+// 		key, got := CreateKey(testDB, c.user, c.name, c.key)
 // 		if got != c.createErr {
 // 			t.Errorf("case %d create key error mismatch. expected: '%s', got: '%s'", i, c.createErr, got)
 // 		}
@@ -52,18 +52,18 @@ func generateTestPublicKey() []byte {
 // 		}
 
 // 		r := &Key{Sha256: key.Sha256}
-// 		if got = r.Read(appDB); got != c.readErr {
+// 		if got = r.Read(testDB); got != c.readErr {
 // 			t.Errorf("case %d read error mismatch. expected: '%s', got: '%s'", i, c.readErr, got)
 // 		}
 // 		if got = CompareKeys(key, r); got != nil {
 // 			t.Errorf("case %d read mismatch: '%s'", i, got)
 // 		}
 
-// 		if got = r.Save(appDB); got != c.saveErr {
+// 		if got = r.Save(testDB); got != c.saveErr {
 // 			t.Errorf("case %d save error mismatch. expected: '%s', got: '%s'", i, c.saveErr, got)
 // 		}
 
-// 		if got = r.Delete(appDB); got != c.delErr {
+// 		if got = r.Delete(testDB); got != c.delErr {
 // 			t.Errorf("case %d delete error mismatch. expected: '%s', got: '%s'", i, c.delErr, got)
 // 		}
 // 	}

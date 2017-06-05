@@ -5,7 +5,7 @@ import (
 )
 
 func TestNewAccessToken(t *testing.T) {
-	token, err := NewAccessToken(appDB)
+	token, err := Create(testDB)
 	if err != nil {
 		t.Errorf("unexpected error: %s", err)
 	}

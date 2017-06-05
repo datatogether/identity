@@ -13,7 +13,7 @@
 		},
 		{
 			"ImportPath": "github.com/archivers-space/sqlutil",
-			"Rev": "9ab5d36e67b7c03b85f8ca1d4552645210ea656d"
+			"Rev": "c499f7a3d5e714cf57707c868acbb3cd7685520d"
 		},
 		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",
@@ -49,6 +49,16 @@
 			"ImportPath": "github.com/joho/godotenv",
 			"Comment": "v1.1",
 			"Rev": "726cc8b906e3d31c70a9671c90a13716a8d3f50d"
+		},
+		{
+			"ImportPath": "github.com/lib/pq",
+			"Comment": "go1.0-cutoff-151-gba5d4f7",
+			"Rev": "ba5d4f7a35561e22fbdf7a39aa0070f4d460cfc0"
+		},
+		{
+			"ImportPath": "github.com/lib/pq/oid",
+			"Comment": "go1.0-cutoff-151-gba5d4f7",
+			"Rev": "ba5d4f7a35561e22fbdf7a39aa0070f4d460cfc0"
 		},
 		{
 			"ImportPath": "github.com/pborman/uuid",

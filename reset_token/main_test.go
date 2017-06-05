@@ -1,3 +1,75 @@
+package reset_token
+
+import (
+	"database/sql"
+	"github.com/archivers-space/sqlutil"
+	_ "github.com/lib/pq"
+	"os"
+	"testing"
+)
+
+var testDB *sql.DB
+
+func TestMain(m *testing.M) {
+	var err error
+	if os.Getenv("POSTGRES_DB_URL") == "" {
+		panic("POSTGRES_DB_URL must be defined")
+	}
+
+	ts, err := sqlutil.InitTestSuite(&sqlutil.TestSuiteOpts{
+		DriverName:      "postgres",
+		ConnString:      os.Getenv("POSTGRES_DB_URL"),
+		SchemaSqlString: schema,
+		DataSqlString:   testData,
+		Cascade: []string{
+			"users",
+			"reset_tokens",
+		},
+	})
+
+	if err != nil {
+		panic(err)
+	}
+	testDB = ts.DB
+
+	retCode := m.Run()
+	os.Exit(retCode)
+}
+
+const schema = `
+-- name: drop-all
+DROP TABLE IF EXISTS users, reset_tokens;
+
+-- name: create-users
+CREATE TABLE users (
+  id                 UUID PRIMARY KEY,
+  created            integer NOT NULL,
+  updated            integer NOT NULL,
+  username           text UNIQUE NOT NULL,
+  type               integer NOT NULL,
+  password_hash      bytea NOT NULL,
+  email              text UNIQUE NOT NULL,
+  name               text default '',
+  description        text default '',
+  home_url           text default '',
+  email_confirmed    boolean DEFAULT false,
+  is_admin           boolean DEFAULT false,
+  current_key        text NOT NULL default '',
+  access_token       text UNIQUE NOT NULL,
+  deleted            boolean DEFAULT false
+);
+
+-- name: create-reset_tokens
+CREATE TABLE reset_tokens (
+  id                 UUID PRIMARY KEY,
+  created            integer NOT NULL,
+  updated            integer NOT NULL,
+  email              text NOT NULL,
+  used               boolean DEFAULT false
+);
+
+`
+const testData = `
 -- name: delete-users
 delete from users;
 -- name: insert-users
@@ -10,32 +82,11 @@ VALUES
   ('1b674f47-d0f4-4b3c-b25d-c49521b5599a', 1464282748, 1464282748, 'ca_census', 2, '\x2432612431302447383370444e4f387a6a7350542f33654377423358756c6e787947327534614247436d787445325556314e50397976413432757579', 'test_user_ca_census@qri.io','Canadian Census (test user)', 'Les Census Canadien','http://census.ca', false, false, '1A2B3C4D5E6F7G8', false),
   ('0232fb99-f965-4fe5-bec9-ad099760ab29', 1464282748, 1464282748, 'us_atf', 2, '\x2432612431302447383370444e4f387a6a7350542f33654377423358756c6e787947327534614247436d787445325556314e50397976413432757579', 'test_user_us_atf@qri.io','US Dpt. of Alcohol, Tobacco, and Firearms (test user)', 'The United States Census','http://atf.gov', false, false, 'C4d1A2B35e6f7G8', false),
   ('57013bf0-2366-11e6-b67b-9e71128cae77', 1464282748, 1464282748, 'us_census', 2, '\x2432612431302447383370444e4f387a6a7350542f33654377423358756c6e787947327534614247436d787445325556314e50397976413432757579', 'test_user_us_census@qri.io','United States Census (test user)', 'The United States Census','http://census.gov', false, false, 'A1B2C3D4E5F6G7H', false);
-
+  
 -- name: delete-reset_tokens
 delete from reset_tokens;
+
 -- name: insert-reset_tokens
 INSERT INTO reset_tokens VALUES
   ('69eb9cbd-7085-4624-a841-59d0f02eaa7b', 1464282748, 1464282748, 'test_user_brendan@qri.io', false);
-
--- name: delete-keys
-delete from keys;
--- name: insert-keys
-INSERT INTO keys VALUES
-  -- type, sha_256, created, last_seen, name, user_id, public_bytes, private_bytes, deleted
-  ('rsa', '\x',1464282748,1464282748,'stuff','61e91231-c7cc-47b4-b392-89fb180a7570', '\x', '\x', false);
-
-
--- name: delete-oauth_tokens
-DELETE FROM oauth_tokens;
--- name: insert-oauth_tokens
--- INSERT INTO oauth_tokens VALUES ();
-
--- name: delete-groups
-DELETE FROM groups;
--- name: insert-groups
--- INSERT INTO groups VALUES ();
-
--- name: delete-group_users
-DELETE FROM group_users;
--- name: insert-group_users
--- INSERT INTO group_users VALUES ();
+`
