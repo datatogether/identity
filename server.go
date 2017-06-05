@@ -6,6 +6,7 @@ import (
 	"github.com/archivers-space/identity/jwt"
 	"github.com/archivers-space/identity/oauth"
 	"github.com/archivers-space/sqlutil"
+	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -52,7 +53,7 @@ func main() {
 		sessionStore.Options.Domain = cfg.UserCookieDomain
 	}
 
-	go sqlutil.ConnectToDb(cfg.PostgresDbUrl, appDB)
+	go sqlutil.ConnectToDb("postgres", cfg.PostgresDbUrl, appDB)
 	go listenRpc()
 
 	s := &http.Server{}

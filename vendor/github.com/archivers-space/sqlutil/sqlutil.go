@@ -6,8 +6,6 @@ import (
 	"fmt"
 	"github.com/gchaincl/dotsql"
 	"time"
-
-	_ "github.com/lib/pq"
 )
 
 // Scannable unifies both *sql.Row & *sql.Rows, functions can accept
@@ -35,9 +33,9 @@ type Transactable interface {
 }
 
 // Uniform Database
-func ConnectToDb(url string, db *sql.DB) error {
+func ConnectToDb(driverName, url string, db *sql.DB) error {
 	for i := 0; i < 1000; i++ {
-		conn, err := SetupConnection(url)
+		conn, err := SetupConnection(driverName, url)
 		if err != nil {
 			fmt.Println(err)
 			time.Sleep(time.Second)
@@ -53,8 +51,8 @@ func ConnectToDb(url string, db *sql.DB) error {
 }
 
 // Sets up a connection with a given postgres db connection string
-func SetupConnection(connString string) (db *sql.DB, err error) {
-	db, err = sql.Open("postgres", connString)
+func SetupConnection(driverName, connString string) (db *sql.DB, err error) {
+	db, err = sql.Open(driverName, connString)
 	if err != nil {
 		return
 	}
