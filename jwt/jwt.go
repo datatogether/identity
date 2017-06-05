@@ -1,4 +1,4 @@
-package main
+package jwt
 
 import (
 	"crypto/rsa"
@@ -23,16 +23,18 @@ type ArchiversClaims struct {
 	UserType string `json:"userType"`
 }
 
-func initKeys(cfg *config) (err error) {
-	signKey, err = jwt.ParseRSAPrivateKeyFromPEM([]byte(cfg.PrivateKey))
+// TODO - refactor to a "jwt" object that holds this state
+func InitKeys(publicKey, privateKey string) (err error) {
+	verifyKey, err = jwt.ParseRSAPublicKeyFromPEM([]byte(publicKey))
 	if err != nil {
 		return
 	}
-	verifyKey, err = jwt.ParseRSAPublicKeyFromPEM([]byte(cfg.PublicKey))
+
+	signKey, err = jwt.ParseRSAPrivateKeyFromPEM([]byte(privateKey))
 	return
 }
 
-func createToken(user *user.User) (string, error) {
+func CreateToken(user *user.User) (string, error) {
 	// create a signer for rsa 256
 	t := jwt.New(jwt.GetSigningMethod("RS256"))
 
@@ -52,7 +54,7 @@ func createToken(user *user.User) (string, error) {
 	return t.SignedString(signKey)
 }
 
-func jwtUser(db *sql.DB, r *http.Request) (*user.User, error) {
+func JwtUser(db *sql.DB, r *http.Request) (*user.User, error) {
 	// Get token from request
 	token, err := request.ParseFromRequestWithClaims(r, request.OAuth2Extractor, &ArchiversClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// since we only use the one private key to sign the tokens,

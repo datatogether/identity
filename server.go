@@ -3,6 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/archivers-space/identity/jwt"
 	"github.com/archivers-space/identity/oauth"
 	"github.com/archivers-space/sqlutil"
 	"github.com/sirupsen/logrus"
@@ -42,10 +43,9 @@ func main() {
 		// panic if the server is missing a vital configuration detail
 		panic(fmt.Errorf("server configuration error: %s", err.Error()))
 	}
-	if err = initKeys(cfg); err != nil {
-		panic(fmt.Errorf("server keys error: %s", err.Error()))
-	}
+
 	oauth.InitOauth(cfg.GithubAppId, cfg.GithubAppSecret)
+	jwt.InitKeys(cfg.PublicKey, cfg.PrivateKey)
 
 	sessionStore = sessions.NewCookieStore([]byte(cfg.SessionSecret))
 	if cfg.UserCookieDomain != "" {

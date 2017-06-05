@@ -1,4 +1,4 @@
-package access_tokens
+package access_token
 
 import (
 	"github.com/archivers-space/sqlutil"

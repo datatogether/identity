@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/archivers-space/identity/jwt"
 	"github.com/archivers-space/identity/user"
 	"net"
 	"net/http"
@@ -73,7 +74,7 @@ func userFromRequest(db *sql.DB, r *http.Request) (*user.User, error) {
 
 	u = tokenUser(r)
 	if u == nil {
-		u, err = jwtUser(db, r)
+		u, err = jwt.JwtUser(db, r)
 		if err != nil {
 			// logger.Println(err.Error())
 		}

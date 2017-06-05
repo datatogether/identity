@@ -1,4 +1,4 @@
-package main
+package reset_token
 
 import (
 	"database/sql"

@@ -5,7 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/archivers-space/errors"
-	"github.com/archivers-space/identity/access_tokens"
+	"github.com/archivers-space/identity/access_token"
 	"github.com/archivers-space/sqlutil"
 	"github.com/pborman/uuid"
 	"strings"
@@ -205,7 +205,7 @@ func (u *User) Save(db sqlutil.Transactable) error {
 			u.Updated = u.Created
 
 			// create access token
-			token, e := access_tokens.Create(db)
+			token, e := access_token.Create(db)
 			if e != nil {
 				return errors.Error500IfErr(e)
 			}

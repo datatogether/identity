@@ -8,6 +8,14 @@
 			"Rev": "eba5c3af9362873cc43c38480ab443c9518c8c06"
 		},
 		{
+			"ImportPath": "github.com/archivers-space/errors",
+			"Rev": "8bdc2a3f98128fadfafdc392d56f5a2bd5c9c754"
+		},
+		{
+			"ImportPath": "github.com/archivers-space/sqlutil",
+			"Rev": "7c6a71263f62d88119419a3c51886089c6f45c6e"
+		},
+		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",
 			"Comment": "v3.0.0-17-g2268707",
 			"Rev": "2268707a8f0843315e2004ee4f1d021dc08baedf"
