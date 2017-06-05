@@ -1,7 +1,7 @@
-package main
+package access_tokens
 
 import (
-	"database/sql"
+	"github.com/archivers-space/sqlutil"
 	"math/rand"
 	"time"
 )
@@ -21,13 +21,14 @@ func RandString(n int) string {
 }
 
 // Create a new access token, making sure it doesn't already exist
-func NewAccessToken(db *sql.DB) (string, error) {
+func Create(db sqlutil.Execable) (string, error) {
 	var token string
 	exists := true
 	for exists {
 		token = RandString(25)
 		if err := db.QueryRow("SELECT exists(SELECT 1 FROM users WHERE access_token=$1)", token).Scan(&exists); err != nil {
-			return "", Error500IfErr(err)
+			// return "", Error500IfErr(err)
+			return "", err
 		}
 	}
 

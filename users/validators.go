@@ -1,7 +1,8 @@
-package main
+package users
 
 import (
 	"database/sql"
+	"github.com/archivers-space/sqlutil"
 	"net/url"
 	"regexp"
 	"strings"
@@ -48,7 +49,7 @@ func validUuid(id string) bool {
 // check if a username is taken, also checking against
 // organization namespace to avoid collisions
 // TODO - refactor to only return an error if taken
-func UsernameTaken(db *sql.DB, username string) (taken bool, err error) {
+func UsernameTaken(db sqlutil.Queryable, username string) (taken bool, err error) {
 	e := db.QueryRow("SELECT exists(SELECT 1 FROM(SELECT lower(username) FROM users WHERE username = $1 AND deleted=false) AS existing)", strings.ToLower(username)).Scan(&taken)
 
 	if e == sql.ErrNoRows {
@@ -61,7 +62,7 @@ func UsernameTaken(db *sql.DB, username string) (taken bool, err error) {
 }
 
 // check if an email is taken
-func EmailTaken(db *sql.DB, email string) (taken bool, err error) {
+func EmailTaken(db sqlutil.Queryable, email string) (taken bool, err error) {
 	e := db.QueryRow(`SELECT exists(SELECT 1 FROM users WHERE email = $1 AND deleted=false)`, email).Scan(&taken)
 
 	if e == sql.ErrNoRows {
@@ -73,7 +74,7 @@ func EmailTaken(db *sql.DB, email string) (taken bool, err error) {
 }
 
 // check if a dataset path is taken
-func PathTaken(db sqlQueryable, path string) (taken bool, err error) {
+func PathTaken(db sqlutil.Queryable, path string) (taken bool, err error) {
 	e := db.QueryRow("SELECT exists(SELECT 1 FROM datasets WHERE path = $1 AND deleted=false)", path).Scan(&taken)
 	if e == sql.ErrNoRows {
 		taken = false
@@ -84,7 +85,7 @@ func PathTaken(db sqlQueryable, path string) (taken bool, err error) {
 }
 
 // check if dataset exists in a given dataset
-func DatasetExists(db sqlQueryable, datasetId string) (exists bool, err error) {
+func DatasetExists(db sqlutil.Queryable, datasetId string) (exists bool, err error) {
 	e := db.QueryRow("SELECT exists(SELECT 1 FROM datasets WHERE id = $1 and deleted = false)", datasetId).Scan(&exists)
 	if e == sql.ErrNoRows {
 		exists = false
@@ -96,7 +97,7 @@ func DatasetExists(db sqlQueryable, datasetId string) (exists bool, err error) {
 }
 
 // check if a user exists on a given database
-func ValidUser(db sqlQueryable, u *User) (err error) {
+func ValidUser(db sqlutil.Queryable, u *User) (err error) {
 	if u == nil {
 		return ErrInvalidUser
 	}

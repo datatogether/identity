@@ -4,6 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
+	"github.com/archivers-space/identity/users"
 	"golang.org/x/oauth2"
 	"net/http"
 )
@@ -24,7 +25,7 @@ func SessionUserTokensHandler(w http.ResponseWriter, r *http.Request) {
 // Check currently logged-in user's access to a provided github repo
 func GithubRepoAccessHandler(w http.ResponseWriter, r *http.Request) {
 	u := sessionUser(r)
-	if u.anonymous {
+	if u.Anonymous {
 		ErrRes(w, ErrAccessDenied)
 		return
 	}
@@ -38,8 +39,8 @@ func GithubRepoAccessHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, t := range tokens {
-		if t.Service == OauthServiceGithub {
-			g := NewGithub(t.token)
+		if t.Service == users.OauthServiceGithub {
+			g := NewGithub(t.Token)
 			info, err := g.CurrentUserInfo()
 			if err != nil {
 				log.Info(err.Error())
@@ -79,7 +80,7 @@ func GithubOauthHandler(w http.ResponseWriter, r *http.Request) {
 		redirect = cfg.UrlRoot
 	}
 	b64 := base64.StdEncoding.EncodeToString([]byte(redirect))
-	url := githubOAuth.AuthCodeURL(b64, oauth2.AccessTypeOffline)
+	url := users.GithubOAuth.AuthCodeURL(b64, oauth2.AccessTypeOffline)
 	// log.Info("Visit the URL for the auth dialog: %v", url)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
@@ -99,15 +100,15 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	redirect := string(redirectBytes)
 
 	code := r.FormValue("code")
-	tok, err := githubOAuth.Exchange(ctx, code)
+	tok, err := users.GithubOAuth.Exchange(ctx, code)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	t := &UserOauthToken{
+	t := &users.UserOauthToken{
 		User:    user,
-		Service: OauthServiceGithub,
-		token:   tok,
+		Service: users.OauthServiceGithub,
+		Token:   tok,
 	}
 
 	if err := t.Read(appDB); err == nil {
@@ -120,14 +121,14 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 			return
 		}
-	} else if user.anonymous {
-		svc, err := t.UserService()
-		if err != nil {
-			log.Info(err.Error())
-			ErrRes(w, err)
-			return
-		}
-		u, err := svc.ExtractUser()
+	} else if user.Anonymous {
+		// svc, err := t.UserService()
+		// if err != nil {
+		// 	log.Info(err.Error())
+		// 	ErrRes(w, err)
+		// 	return
+		// }
+		u, err := NewGithub(t.Token).ExtractUser()
 		if err != nil {
 			log.Info(err.Error())
 			ErrRes(w, err)
@@ -135,7 +136,7 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		t.User = u
 
-		emailUser := &User{Email: u.Email}
+		emailUser := &users.User{Email: u.Email}
 		if err := emailUser.Read(appDB); err == nil {
 			// if we have a matching email, connect the two accounts
 			t.User = emailUser
@@ -174,11 +175,12 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if redirect != "" {
-		redirect, err := ValidUrlString(redirect)
-		if err == nil {
-			log.Info("redirecting to", redirect)
-			http.Redirect(w, r, redirect, http.StatusFound)
-		}
+		// TODO - replace once validator package is in place
+		// redirect, err := ValidUrlString(redirect)
+		// if err == nil {
+		log.Info("redirecting to", redirect)
+		http.Redirect(w, r, redirect, http.StatusFound)
+		// }
 		return
 	}
 

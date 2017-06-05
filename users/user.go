@@ -1,9 +1,12 @@
-package main
+package users
 
 import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/archivers-space/identity/access_tokens"
+	"github.com/archivers-space/sqlutil"
+	"github.com/pborman/uuid"
 	"strings"
 	"time"
 
@@ -43,12 +46,16 @@ type User struct {
 	// often users get auto-generated based on IP for rate lmiting & stuff
 	// this flag tracks that.
 	// TODO - for this to be useful it'll need to be Exported
-	anonymous bool
+	Anonymous bool `json:"_"`
 }
 
 // create a new user struct pointer from a provided id string
 func NewUser(id string) *User {
 	return &User{Id: id, Type: UserTypeUser}
+}
+
+func NewAccessTokenUser(token string) *User {
+	return &User{accessToken: token, Type: UserTypeUser}
 }
 
 // NewUserFromFromString attempts to place the provided string in the right field.
@@ -64,7 +71,7 @@ func NewUserFromString(s string) *User {
 	return &User{}
 }
 
-func (u *User) OauthTokens(db sqlQueryable) ([]*UserOauthToken, error) {
+func (u *User) OauthTokens(db sqlutil.Queryable) ([]*UserOauthToken, error) {
 	res, err := db.Query(qUserOauthTokensForUser, u.Id)
 	if err != nil {
 		return nil, err
@@ -126,7 +133,7 @@ func (u *User) Path() string {
 
 // load the given user from the database based on
 // id, username, or email
-func (u *User) Read(db *sql.DB) error {
+func (u *User) Read(db sqlutil.Queryable) error {
 	var clause, value string
 
 	if u.Id != "" {
@@ -152,7 +159,8 @@ func (u *User) Read(db *sql.DB) error {
 		if err == sql.ErrNoRows {
 			return ErrNotFound
 		} else {
-			return New500Error(err.Error())
+			// return New500Error(err.Error())
+			return err
 		}
 	}
 
@@ -160,7 +168,7 @@ func (u *User) Read(db *sql.DB) error {
 	return nil
 }
 
-func (u *User) ReadApiToken(db *sql.DB) error {
+func (u *User) ReadApiToken(db sqlutil.Queryable) error {
 	var token string
 	if err := db.QueryRow("SELECT access_token FROM users WHERE id= $1", u.Id).Scan(&token); err != nil {
 		return err
@@ -173,7 +181,7 @@ func (u *User) AccessToken() string {
 	return u.accessToken
 }
 
-func (u *User) SetCurrentKey(db sqlQueryExecable, key [32]byte) error {
+func (u *User) SetCurrentKey(db sqlutil.Execable, key [32]byte) error {
 	var userId string
 	if err := db.QueryRow("select user_id from keys where sha_256 = $1", key[:]).Scan(&userId); err != nil {
 		return err
@@ -187,7 +195,7 @@ func (u *User) SetCurrentKey(db sqlQueryExecable, key [32]byte) error {
 
 // save a user model, creating it if it doesn't exist
 // updating the user model if it doesn't
-func (u *User) Save(db *sql.DB) error {
+func (u *User) Save(db sqlutil.Transactable) error {
 	prev := NewUser(u.Id)
 	if err := prev.Read(db); err != nil {
 		// create if user doesn't exist
@@ -198,17 +206,21 @@ func (u *User) Save(db *sql.DB) error {
 
 			hash, e := bcrypt.GenerateFromPassword([]byte(u.password), bcrypt.DefaultCost)
 			if e != nil {
-				return Error500IfErr(e)
+				// TODO - resolve these old Err500IfErr funcs by either removing
+				// or re-implementing as a package
+				// return Error500IfErr(e)
+				return e
 			}
 
-			u.Id = NewUuid()
+			u.Id = uuid.New()
 			u.Created = time.Now().Unix()
 			u.Updated = u.Created
 
 			// create access token
-			token, e := NewAccessToken(db)
+			token, e := access_tokens.Create(db)
 			if e != nil {
-				return Error500IfErr(e)
+				// return Error500IfErr(e)
+				return e
 			}
 			u.accessToken = token
 
@@ -219,12 +231,10 @@ func (u *User) Save(db *sql.DB) error {
 			// create default keypair using newly-minted user
 			key, err := NewKey("default key", u)
 			if err != nil {
-				log.Info(err.Error())
 				return err
 			}
 
 			if err = key.Save(db); err != nil {
-				log.Info(err.Error())
 				return err
 			}
 
@@ -241,12 +251,14 @@ func (u *User) Save(db *sql.DB) error {
 		u.Updated = time.Now().Unix()
 		tx, err := db.Begin()
 		if err != nil {
-			return New500Error(err.Error())
+			// return New500Error(err.Error())
+			return err
 		}
 
 		if _, err := tx.Exec("UPDATE users SET updated=$2, username= $3, type=$4, name=$5, description=$6, home_url= $7, email_confirmed=$8, access_token=$9 WHERE id= $1 AND deleted=false", u.Id, u.Updated, u.Username, u.Type, u.Name, u.Description, u.HomeUrl, u.emailConfirmed, u.accessToken); err != nil {
 			tx.Rollback()
-			return Error500IfErr(err)
+			// return Error500IfErr(err)
+			return err
 		}
 
 		if prev.Username != u.Username {
@@ -266,10 +278,12 @@ func (u *User) Save(db *sql.DB) error {
 
 		if err := tx.Commit(); err != nil {
 			tx.Rollback()
-			return Error500IfErr(err)
+			// return Error500IfErr(err)
+			return err
 		}
 
-		return Error500IfErr(err)
+		// return Error500IfErr(err)
+		return err
 	}
 
 	return nil
@@ -279,39 +293,43 @@ func (u *User) Save(db *sql.DB) error {
 // TODO - deleting an account will require lots of cleanup:
 //	* Close any open change requests
 //	* Resolve any datasets that the user is the sole administrator of
-func (u *User) Delete(db *sql.DB) error {
+func (u *User) Delete(db sqlutil.Transactable) error {
 	if err := u.Read(db); err != nil {
 		return err
 	}
 	tx, err := db.Begin()
 	if err != nil {
-		return New500Error(err.Error())
+		// return New500Error(err.Error())
+		return err
 	}
 
 	u.Updated = time.Now().Unix()
 	if _, err := tx.Exec("UPDATE users SET updated= $2, deleted=true WHERE id= $1", u.Id, u.Updated); err != nil {
 		tx.Rollback()
-		return Error500IfErr(err)
+		// return Error500IfErr(err)
+		return err
 	}
 
 	// TODO - Users that delete their profile will need to have all their datasets deleted as well
 
 	if err := tx.Commit(); err != nil {
 		tx.Rollback()
-		return Error500IfErr(err)
+		// return Error500IfErr(err)
+		return err
 	}
 
 	return nil
 }
 
 // validate a user for creation
-func (u *User) validateCreate(db *sql.DB) error {
+func (u *User) validateCreate(db sqlutil.Queryable) error {
 	if err := u.valFields(); err != nil {
 		return err
 	}
 
 	if taken, err := UsernameTaken(db, u.Username); err != nil {
-		return Error500IfErr(err)
+		// return Error500IfErr(err)
+		return err
 	} else if taken {
 		return ErrUsernameTaken
 	}
@@ -366,7 +384,7 @@ func (u *User) valFields() error {
 }
 
 // validate a user for updating
-func (u *User) validateUpdate(db *sql.DB, prev *User) error {
+func (u *User) validateUpdate(db sqlutil.Queryable, prev *User) error {
 	// fill in any blank data that can't be blank
 	if u.Username == "" {
 		u.Username = prev.Username
@@ -402,7 +420,7 @@ func (u *User) validateUpdate(db *sql.DB, prev *User) error {
 // create a new user from a given username, email, first, last, and password
 // This is just a wrapper to turn args into a user & then call save, returning the user & error,
 // But should be used to create users in case we want to inject analytics or whatever.
-func CreateUser(db *sql.DB, username, email, name, password string, t UserType) (u *User, err error) {
+func CreateUser(db sqlutil.Transactable, username, email, name, password string, t UserType) (u *User, err error) {
 	u = &User{
 		Username:       username,
 		Email:          email,
@@ -422,7 +440,7 @@ func CreateUser(db *sql.DB, username, email, name, password string, t UserType) 
 
 // attempt to authenticate a user, for now only returns either nil or ErrAccessDenied
 // TODO - should also return 500-type errors when service is down
-func AuthenticateUser(db *sql.DB, username, password string) (u *User, err error) {
+func AuthenticateUser(db sqlutil.Queryable, username, password string) (u *User, err error) {
 	var hash []byte
 	u = &User{Username: username}
 	if err := u.Read(db); err != nil {
@@ -453,8 +471,9 @@ func (u *User) validatePassword() error {
 	return nil
 }
 
-// private method to actually set a user's passowrd
-func (u *User) savePassword(db *sql.DB) error {
+// SavePassword sets a user's password
+func (u *User) SavePassword(db sqlutil.Execable, password string) error {
+	u.password = password
 	if err := u.validatePassword(); err != nil {
 		return err
 	}
@@ -469,12 +488,12 @@ func (u *User) savePassword(db *sql.DB) error {
 }
 
 // construct the url for a user to confirm their email address
-func (u *User) confirmEmailUrl() string {
-	return fmt.Sprintf("%s/email/%s/confirm", cfg.UrlRoot, u.Id)
-}
+// func (u *User) confirmEmailUrl() string {
+// 	return fmt.Sprintf("%s/email/%s/confirm", cfg.UrlRoot, u.Id)
+// }
 
 // turn an sql row from the user table into a user struct pointer
-func (u *User) UnmarshalSQL(row sqlScannable) error {
+func (u *User) UnmarshalSQL(row sqlutil.Scannable) error {
 	var (
 		id, username, name, email, description, homeUrl, key string
 		created, updated                                     int64
@@ -503,13 +522,13 @@ func (u *User) UnmarshalSQL(row sqlScannable) error {
 	return nil
 }
 
-func (u *User) AcceptGroupInvite(db *sql.DB, g *Group) error {
-	t := time.Now().Round(time.Second).In(time.UTC)
-	_, err := db.Exec(qUserAcceptGroupInvite, g.Id, u.Id, t)
-	return err
-}
+// func (u *User) AcceptGroupInvite(db *sql.DB, g *Group) error {
+// 	t := time.Now().Round(time.Second).In(time.UTC)
+// 	_, err := db.Exec(qUserAcceptGroupInvite, g.Id, u.Id, t)
+// 	return err
+// }
 
-func (u *User) DeclineGroupInvite(db *sql.DB, g *Group) error {
-	_, err := db.Exec(qGroupRemoveUser, g.Id, u.Id)
-	return err
-}
+// func (u *User) DeclineGroupInvite(db *sql.DB, g *Group) error {
+// 	_, err := db.Exec(qGroupRemoveUser, g.Id, u.Id)
+// 	return err
+// }

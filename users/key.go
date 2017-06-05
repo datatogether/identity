@@ -1,4 +1,4 @@
-package main
+package users
 
 import (
 	"crypto/rand"
@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"github.com/archivers-space/sqlutil"
 	"time"
 
 	"golang.org/x/crypto/ssh"
@@ -41,7 +42,7 @@ func keyString(pubKey ssh.PublicKey) string {
 }
 
 // UserForPublicKey finds a user based on a provided public key
-func UserForPublicKey(db *sql.DB, pubKey ssh.PublicKey) (*User, error) {
+func UserForPublicKey(db sqlutil.Queryable, pubKey ssh.PublicKey) (*User, error) {
 	row := db.QueryRow(fmt.Sprintf("select %s from users where id = (select id from keys where sha_256= $1 and deleted = false)", userColumns()), sha256.Sum256(pubKey.Marshal()))
 	u := &User{}
 	err := u.UnmarshalSQL(row)
@@ -117,7 +118,7 @@ func NewKey(name string, u *User) (*Key, error) {
 	}, nil
 }
 
-func CreateKey(db *sql.DB, u *User, name string, publicKey []byte) (*Key, error) {
+func CreateKey(db sqlutil.Execable, u *User, name string, publicKey []byte) (*Key, error) {
 	key, comment, _, _, err := ssh.ParseAuthorizedKey(publicKey)
 	if err != nil {
 		return nil, ErrInvalidKey
@@ -149,7 +150,7 @@ func CreateKey(db *sql.DB, u *User, name string, publicKey []byte) (*Key, error)
 	return k, nil
 }
 
-func (key *Key) Read(db *sql.DB) error {
+func (key *Key) Read(db sqlutil.Queryable) error {
 	row := db.QueryRow(fmt.Sprintf("SELECT %s FROM keys WHERE sha_256=$1 AND deleted=false", keyColumns()), key.Sha256[:])
 	if err := key.UnmarshalSQL(row); err != nil {
 		if err == sql.ErrNoRows {
@@ -161,7 +162,7 @@ func (key *Key) Read(db *sql.DB) error {
 	return nil
 }
 
-func (k *Key) Save(db *sql.DB) error {
+func (k *Key) Save(db sqlutil.Execable) error {
 	if err := k.validate(db); err != nil {
 		return err
 	}
@@ -171,11 +172,9 @@ func (k *Key) Save(db *sql.DB) error {
 		if err == ErrNotFound {
 			k.Created = time.Now().Unix()
 			if _, e := db.Exec("INSERT INTO keys VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)", k.Type, k.Sha256[:], k.Created, k.LastSeen, k.Name, k.User.Id, k.Public, k.private); e != nil {
-				log.Info(e.Error())
 				return NewFmtError(500, e.Error())
 			}
 		} else {
-			log.Info(err.Error())
 			return err
 		}
 	} else {
@@ -187,12 +186,12 @@ func (k *Key) Save(db *sql.DB) error {
 }
 
 // "delete" a user_key
-func (key *Key) Delete(db *sql.DB) error {
+func (key *Key) Delete(db sqlutil.Execable) error {
 	_, err := db.Exec("UPDATE keys SET deleted=true WHERE sha_256 = $1", key.Sha256[:])
 	return err
 }
 
-func (key *Key) validate(db *sql.DB) error {
+func (key *Key) validate(db sqlutil.Queryable) error {
 	if key.User == nil {
 		return ErrUserRequired
 	}
@@ -216,7 +215,7 @@ func keyColumns() string {
 }
 
 // turn an sql row from the user table into a user struct pointer
-func (key *Key) UnmarshalSQL(row sqlScannable) error {
+func (key *Key) UnmarshalSQL(row sqlutil.Scannable) error {
 	var (
 		keyType, name, userId             string
 		created, lastSeen                 int64

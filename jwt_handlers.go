@@ -3,6 +3,7 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/archivers-space/identity/users"
 	"net/http"
 )
 
@@ -45,7 +46,7 @@ func JwtTokenHandler(w http.ResponseWriter, r *http.Request) {
 		login.Password = r.FormValue("password")
 	}
 
-	u, err := AuthenticateUser(appDB, login.Username, login.Password)
+	u, err := users.AuthenticateUser(appDB, login.Username, login.Password)
 	if err != nil {
 		ErrRes(w, ErrInvalidUserNamePasswordCombo)
 		return

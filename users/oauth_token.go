@@ -1,8 +1,8 @@
-package main
+package users
 
 import (
 	"database/sql"
-	"fmt"
+	"github.com/archivers-space/sqlutil"
 	"golang.org/x/oauth2"
 	"time"
 )
@@ -10,11 +10,11 @@ import (
 type UserOauthToken struct {
 	User    *User
 	Service string
-	token   *oauth2.Token
+	Token   *oauth2.Token
 }
 
 func (t *UserOauthToken) ReadUser(db *sql.DB) (*User, error) {
-	row, err := db.Query(qUserOauthTokenUser, t.Service, t.token)
+	row, err := db.Query(qUserOauthTokenUser, t.Service, t.Token)
 	if err != nil {
 		return nil, err
 	}
@@ -27,19 +27,19 @@ func (t *UserOauthToken) ReadUser(db *sql.DB) (*User, error) {
 	return u, nil
 }
 
-func (t *UserOauthToken) UserService() (OauthUserService, error) {
-	switch t.Service {
-	case OauthServiceGithub:
-		return NewGithub(t.token), nil
-	default:
-		return nil, fmt.Errorf("invalid service name")
-	}
-}
+// func (t *UserOauthToken) UserService() (OauthUserService, error) {
+// 	switch t.Service {
+// 	case OauthServiceGithub:
+// 		return NewGithub(t.token), nil
+// 	default:
+// 		return nil, fmt.Errorf("invalid service name")
+// 	}
+// }
 
 func (g *UserOauthToken) Read(db *sql.DB) error {
 	// first try to read by token id
-	if g.token != nil {
-		if err := g.UnmarshalSQL(db.QueryRow(qUserOauthTokenByAccessToken, g.token.AccessToken)); err == nil {
+	if g.Token != nil {
+		if err := g.UnmarshalSQL(db.QueryRow(qUserOauthTokenByAccessToken, g.Token.AccessToken)); err == nil {
 			return nil
 		}
 	}
@@ -54,16 +54,14 @@ func (t *UserOauthToken) Save(db *sql.DB) error {
 	if err := prev.Read(db); err != nil {
 		if err == ErrNotFound {
 			if _, err := db.Exec(qUserOauthTokenInsert, t.SQLArgs()...); err != nil {
-				log.Info(err.Error())
-				return NewFmtError(500, err.Error())
+				// return NewFmtError(500, err.Error())
+				return err
 			}
 		} else {
-			log.Info(err.Error())
 			return err
 		}
 	} else {
 		if _, err := db.Exec(qUserOauthTokenUpdate, t.SQLArgs()...); err != nil {
-			log.Info(err.Error())
 			return err
 		}
 	}
@@ -79,7 +77,7 @@ func (g *UserOauthToken) Delete(db *sql.DB) error {
 }
 
 // turn a sql.Row result into a reset token pointer
-func (g *UserOauthToken) UnmarshalSQL(row sqlScannable) error {
+func (g *UserOauthToken) UnmarshalSQL(row sqlutil.Scannable) error {
 	var (
 		userId, service, access, tType, refresh string
 		expiry                                  time.Time
@@ -95,7 +93,7 @@ func (g *UserOauthToken) UnmarshalSQL(row sqlScannable) error {
 	tok := &UserOauthToken{
 		User:    &User{Id: userId},
 		Service: service,
-		token: &oauth2.Token{
+		Token: &oauth2.Token{
 			AccessToken:  access,
 			TokenType:    tType,
 			RefreshToken: refresh,
@@ -108,15 +106,15 @@ func (g *UserOauthToken) UnmarshalSQL(row sqlScannable) error {
 }
 
 func (t *UserOauthToken) SQLArgs() []interface{} {
-	if t.token == nil {
-		t.token = &oauth2.Token{}
+	if t.Token == nil {
+		t.Token = &oauth2.Token{}
 	}
 	return []interface{}{
 		t.User.Id,
 		t.Service,
-		t.token.AccessToken,
-		t.token.Type(),
-		t.token.RefreshToken,
-		t.token.Expiry,
+		t.Token.AccessToken,
+		t.Token.Type(),
+		t.Token.RefreshToken,
+		t.Token.Expiry,
 	}
 }

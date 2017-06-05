@@ -2,8 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/archivers-space/identity/users"
 	"net/http"
 )
+
+var UsersRequests = users.UserRequests{Store: appDB}
 
 func UsersHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -31,15 +34,15 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 
 func SingleUserHandler(w http.ResponseWriter, r *http.Request) {
 	envelope := r.FormValue("envelope") != "false"
-	p := &UsersGetParams{
-		Subject: &User{
-			Id:          r.FormValue("id"),
-			Username:    r.FormValue("username"),
-			accessToken: r.FormValue("access_token"),
+	p := &users.UsersGetParams{
+		Subject: &users.User{
+			Id:       r.FormValue("id"),
+			Username: r.FormValue("username"),
+			// accessToken: r.FormValue("access_token"),
 		},
 	}
-	res := &User{}
-	if err := new(Users).Get(p, res); err != nil {
+	res := &users.User{}
+	if err := UsersRequests.Get(p, res); err != nil {
 		ErrRes(w, err)
 		return
 	}
@@ -56,12 +59,14 @@ func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 		SingleUserHandler(w, r)
 		return
 	} else {
-		p := &UsersListParams{
-			User: sessionUser(r),
-			Page: PageFromRequest(r),
+		page := PageFromRequest(r)
+		p := &users.UsersListParams{
+			User:   sessionUser(r),
+			Limit:  page.Size,
+			Offset: page.Offset(),
 		}
-		res := []*User{}
-		if err := new(Users).List(p, &res); err != nil {
+		res := []*users.User{}
+		if err := UsersRequests.List(p, &res); err != nil {
 			ErrRes(w, err)
 			return
 		}
@@ -74,7 +79,8 @@ func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 // Create a user from the api, feed password in as a query param
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	// sess := sessionUser(r)
-	u := NewUser("")
+	u := users.NewUser("")
+	pw := ""
 
 	if isJsonRequest(r) {
 		params := struct {
@@ -86,24 +92,26 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 			ErrRes(w, NewFmtError(http.StatusBadRequest, "error decoding json: %s", err.Error()))
 			return
 		}
-		u = &User{
+		u = &users.User{
 			Username: params.Username,
 			Email:    params.Email,
-			password: params.Password,
+			// password: params.Password,
 		}
+		pw = params.Password
 	} else {
 		// default to form data values
 		u.Username = r.FormValue("username")
 		u.Email = r.FormValue("email")
-		u.password = r.FormValue("password")
+		pw = r.FormValue("password")
 	}
 
-	p := &UsersCreateParams{
-		User: u,
+	p := &users.UsersCreateParams{
+		User:     u,
+		Password: pw,
 	}
 
-	res := &User{}
-	if err := new(Users).Create(p, res); err != nil {
+	res := &users.User{}
+	if err := UsersRequests.Create(p, res); err != nil {
 		ErrRes(w, err)
 		return
 	}
@@ -137,7 +145,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 // SaveUserHandler updates a user
 func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
-	u := &User{}
+	u := &users.User{}
 	if isJsonRequest(r) {
 		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 			ErrRes(w, NewFmtError(http.StatusBadRequest, err.Error()))
@@ -147,13 +155,13 @@ func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
 		// TODO - fill user out from form values
 	}
 
-	p := &UsersSaveParams{
+	p := &users.UsersSaveParams{
 		User:    sessionUser(r),
 		Subject: u,
 	}
 
-	res := &User{}
-	if err := new(Users).Save(p, res); err != nil {
+	res := &users.User{}
+	if err := UsersRequests.Save(p, res); err != nil {
 		ErrRes(w, err)
 		return
 	}
@@ -162,14 +170,16 @@ func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func UsersSearchHandler(w http.ResponseWriter, r *http.Request) {
-	p := &UsersSearchParams{
-		User:  sessionUser(r),
-		Query: r.FormValue("q"),
-		Page:  PageFromRequest(r),
+	page := PageFromRequest(r)
+	p := &users.UsersSearchParams{
+		User:   sessionUser(r),
+		Query:  r.FormValue("q"),
+		Limit:  page.Size,
+		Offset: page.Offset(),
 	}
 
-	res := []*User{}
-	if err := new(Users).Search(p, &res); err != nil {
+	res := []*users.User{}
+	if err := UsersRequests.Search(p, &res); err != nil {
 		ErrRes(w, err)
 		return
 	}

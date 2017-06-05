@@ -3,6 +3,8 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/archivers-space/identity/users"
+	"github.com/archivers-space/sqlutil"
 	"strings"
 	"time"
 )
@@ -21,7 +23,7 @@ func resetTokenColumns() string {
 }
 
 // create a reset token
-func CreateResetToken(db *sql.DB, email string) (*ResetToken, error) {
+func CreateResetToken(db sqlutil.Execable, email string) (*ResetToken, error) {
 	now := time.Now().Unix()
 	t := &ResetToken{
 		Id:      NewUuid(),
@@ -43,14 +45,14 @@ func CreateResetToken(db *sql.DB, email string) (*ResetToken, error) {
 }
 
 // validate a reset token
-func (r *ResetToken) validate(db *sql.DB) error {
+func (r *ResetToken) validate(db sqlutil.Queryable) error {
 	r.Email = strings.TrimSpace(r.Email)
 	if r.Email == "" {
 		return ErrEmailRequired
 	}
-	if !emailRegex.MatchString(r.Email) {
-		return ErrInvalidEmail
-	}
+	// if !emailRegex.MatchString(r.Email) {
+	// 	return ErrInvalidEmail
+	// }
 
 	var exists bool
 	if err := db.QueryRow("SELECT exists(SELECT 1 FROM users WHERE email = $1)", r.Email).Scan(&exists); err != nil {
@@ -93,19 +95,19 @@ func (r *ResetToken) Usable() error {
 }
 
 // use the token to reset the user's password, returning the updated user
-func (r *ResetToken) Consume(db *sql.DB, password string) (*User, error) {
+func (r *ResetToken) Consume(db sqlutil.Execable, password string) (*users.User, error) {
 	if err := r.Usable(); err != nil {
 		return nil, err
 	}
 
-	u := NewUser("")
+	u := users.NewUser("")
 	u.Email = r.Email
 	if err := u.Read(db); err != nil {
 		return u, err
 	}
 
-	u.password = password
-	if err := u.savePassword(db); err != nil {
+	// u.password = password
+	if err := u.SavePassword(db, password); err != nil {
 		return u, err
 	}
 
@@ -119,7 +121,7 @@ func (r *ResetToken) Consume(db *sql.DB, password string) (*User, error) {
 }
 
 // turn a sql.Row result into a reset token pointer
-func serializeResetToken(row sqlScannable) (*ResetToken, error) {
+func serializeResetToken(row sqlutil.Scannable) (*ResetToken, error) {
 	var (
 		id, email        string
 		created, updated int64

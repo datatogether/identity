@@ -3,6 +3,7 @@ package main
 import (
 	"crypto/rsa"
 	"database/sql"
+	"github.com/archivers-space/identity/users"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"net/http"
@@ -31,7 +32,7 @@ func initKeys(cfg *config) (err error) {
 	return
 }
 
-func createToken(user *User) (string, error) {
+func createToken(user *users.User) (string, error) {
 	// create a signer for rsa 256
 	t := jwt.New(jwt.GetSigningMethod("RS256"))
 
@@ -51,7 +52,7 @@ func createToken(user *User) (string, error) {
 	return t.SignedString(signKey)
 }
 
-func jwtUser(db *sql.DB, r *http.Request) (*User, error) {
+func jwtUser(db *sql.DB, r *http.Request) (*users.User, error) {
 	// Get token from request
 	token, err := request.ParseFromRequestWithClaims(r, request.OAuth2Extractor, &ArchiversClaims{}, func(token *jwt.Token) (interface{}, error) {
 		// since we only use the one private key to sign the tokens,
@@ -66,7 +67,7 @@ func jwtUser(db *sql.DB, r *http.Request) (*User, error) {
 
 	// Token is valid
 	// fmt.Fprintln(w, "Welcome,", token.Claims.(*ArchiversClaims).Name)
-	u := &User{Id: token.Claims.(*ArchiversClaims).UserId}
+	u := &users.User{Id: token.Claims.(*ArchiversClaims).UserId}
 	err = u.Read(db)
 	return u, err
 }

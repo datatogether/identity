@@ -1,4 +1,4 @@
-package main
+package users
 
 import (
 	"golang.org/x/oauth2"
@@ -14,13 +14,13 @@ type OauthUserService interface {
 }
 
 var (
-	githubOAuth *oauth2.Config
+	GithubOAuth *oauth2.Config
 )
 
-func initOauth() {
-	githubOAuth = &oauth2.Config{
-		ClientID:     cfg.GithubAppId,
-		ClientSecret: cfg.GithubAppSecret,
+func InitOauth(appId, appSecret string) {
+	GithubOAuth = &oauth2.Config{
+		ClientID:     appId,
+		ClientSecret: appSecret,
 		// RedirectURL:  "https://ident.archivers.space/oauth/callback",
 		Scopes: []string{"user:email", "public_repo"},
 		Endpoint: oauth2.Endpoint{

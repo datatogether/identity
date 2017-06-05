@@ -1,10 +1,11 @@
-package main
+package groups
 
 import (
 	"database/sql"
+	"github.com/archivers-space/sqlutil"
 )
 
-func ListGroups(db sqlQueryable, limit, offset int) ([]*Group, error) {
+func ListGroups(db sqlutil.Queryable, limit, offset int) ([]*Group, error) {
 	rows, err := db.Query(qGroups, limit, offset)
 	if err != nil {
 		return nil, err

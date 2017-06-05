@@ -1,4 +1,4 @@
-package main
+package groups
 
 const qGroups = `
 SELECT

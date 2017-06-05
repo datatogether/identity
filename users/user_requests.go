@@ -1,13 +1,16 @@
-package main
+package users
 
 import (
+	"github.com/archivers-space/sqlutil"
 	"strings"
 )
 
-// Users holds all types of requests for users
+// Requests holds all types of requests for users
 // it's based on an int b/c it's stateless and Go lets us
 // do this sort of thing
-type Users int
+type UserRequests struct {
+	Store sqlutil.Transactable
+}
 
 // UsersRequest defines a request for users, outlining all possible
 // options for scoping & shaping the desired response
@@ -15,11 +18,12 @@ type UsersListParams struct {
 	// the user performing the request
 	User *User `required:"true"`
 	// users requests embeds pagination info
-	Page
+	Limit  int
+	Offset int
 }
 
-func (Users) List(p *UsersListParams, res *[]*User) error {
-	users, err := ReadUsers(appDB, p.Page)
+func (r UserRequests) List(p *UsersListParams, res *[]*User) error {
+	users, err := ReadUsers(r.Store, p.Limit, p.Offset)
 	if err != nil {
 		return err
 	}
@@ -33,8 +37,8 @@ type UsersGetParams struct {
 	Subject *User
 }
 
-func (Users) Get(p *UsersGetParams, res *User) error {
-	if err := p.Subject.Read(appDB); err != nil {
+func (r UserRequests) Get(p *UsersGetParams, res *User) error {
+	if err := p.Subject.Read(r.Store); err != nil {
 		return err
 	}
 
@@ -43,10 +47,12 @@ func (Users) Get(p *UsersGetParams, res *User) error {
 }
 
 type UsersCreateParams struct {
-	User *User
+	User     *User
+	Password string
 }
 
-func (Users) Create(p *UsersCreateParams, res *User) error {
+func (r UserRequests) Create(p *UsersCreateParams, res *User) error {
+	p.User.password = p.Password
 	if strings.TrimSpace(p.User.password) == "" {
 		return ErrPasswordRequired
 	}
@@ -54,7 +60,7 @@ func (Users) Create(p *UsersCreateParams, res *User) error {
 		return ErrEmailRequired
 	}
 
-	if err := p.User.Save(appDB); err != nil {
+	if err := p.User.Save(r.Store); err != nil {
 		return err
 	}
 
@@ -67,12 +73,12 @@ type UsersSaveParams struct {
 	Subject *User
 }
 
-func (Users) Save(p *UsersSaveParams, res *User) error {
+func (r UserRequests) Save(p *UsersSaveParams, res *User) error {
 	if !p.User.isAdmin && p.User.Id != p.Subject.Id {
 		return ErrAccessDenied
 	}
 
-	if err := p.Subject.Save(appDB); err != nil {
+	if err := p.Subject.Save(r.Store); err != nil {
 		return err
 	}
 
@@ -81,13 +87,14 @@ func (Users) Save(p *UsersSaveParams, res *User) error {
 }
 
 type UsersSearchParams struct {
-	User  *User
-	Query string
-	Page
+	User   *User
+	Query  string
+	Limit  int
+	Offset int
 }
 
-func (Users) Search(p *UsersSearchParams, res *[]*User) error {
-	users, err := UsersSearch(appDB, p.Query, p.Page.Size, p.Page.Offset())
+func (r UserRequests) Search(p *UsersSearchParams, res *[]*User) error {
+	users, err := UsersSearch(r.Store, p.Query, p.Limit, p.Offset)
 	if err != nil {
 		return err
 	}

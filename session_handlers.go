@@ -4,6 +4,7 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/archivers-space/identity/users"
 	"net"
 	"net/http"
 	"strings"
@@ -27,18 +28,18 @@ func SessionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 // grab the current serialized sesion user, returns nil if no user present
-func sessionUser(r *http.Request) *User {
-	if u, ok := r.Context().Value("user").(*User); ok {
+func sessionUser(r *http.Request) *users.User {
+	if u, ok := r.Context().Value("user").(*users.User); ok {
 		return u
 	}
 	return nil
 }
 
-func cookieUser(r *http.Request) *User {
+func cookieUser(r *http.Request) *users.User {
 	if session, err := sessionStore.Get(r, cfg.UserCookieKey); err == nil {
 		if session.Values["id"] != nil {
 			if id, ok := session.Values["id"].(string); ok {
-				return NewUser(id)
+				return users.NewUser(id)
 			}
 		}
 	} else {
@@ -49,13 +50,13 @@ func cookieUser(r *http.Request) *User {
 
 // check if a user has been provided via access_token param either as a header
 // or as request params
-func tokenUser(r *http.Request) *User {
-	u := NewUser("")
+func tokenUser(r *http.Request) *users.User {
+	u := users.NewUser("")
 	if r.Header.Get("access_token") != "" {
-		u.accessToken = r.Header.Get("access_token")
+		u = users.NewAccessTokenUser(r.Header.Get("access_token"))
 		return u
 	} else if r.FormValue("access_token") != "" {
-		u.accessToken = r.FormValue("access_token")
+		u = users.NewAccessTokenUser(r.FormValue("access_token"))
 		return u
 	} else {
 		return nil
@@ -64,9 +65,9 @@ func tokenUser(r *http.Request) *User {
 
 // attempt to extract & read a session user from a given request.
 // if no user is provided, an anonymous user is created
-func userFromRequest(db *sql.DB, r *http.Request) (*User, error) {
+func userFromRequest(db *sql.DB, r *http.Request) (*users.User, error) {
 	var (
-		u   *User
+		u   *users.User
 		err error
 	)
 
@@ -82,9 +83,9 @@ func userFromRequest(db *sql.DB, r *http.Request) (*User, error) {
 	}
 	if u == nil {
 		// create anononymous user with ip address
-		return &User{
+		return &users.User{
 			Username:  getIP(r),
-			anonymous: true,
+			Anonymous: true,
 		}, nil
 	}
 
@@ -156,7 +157,7 @@ func LoginHandler(w http.ResponseWriter, r *http.Request) {
 		login.Password = r.FormValue("password")
 	}
 
-	u, err := AuthenticateUser(appDB, login.Username, login.Password)
+	u, err := users.AuthenticateUser(appDB, login.Username, login.Password)
 	if err != nil {
 		log.Infoln(ErrInvalidUserNamePasswordCombo)
 		ErrRes(w, ErrInvalidUserNamePasswordCombo)
@@ -181,7 +182,7 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 		log.Infof("session get user error", err.Error())
 	} else {
 		if id, ok := session.Values["id"].(string); ok {
-			u := NewUser(id)
+			u := users.NewUser(id)
 			if err := u.Read(appDB); err == nil {
 				log.Info("logout user: %s", u.Username)
 			}

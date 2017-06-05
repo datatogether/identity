@@ -1,14 +1,15 @@
-package main
+package users
 
 import (
 	"database/sql"
 	"fmt"
+	"github.com/archivers-space/sqlutil"
 )
 
 // grab all users
-func ReadUsers(db sqlQueryable, p Page) (users []*User, err error) {
+func ReadUsers(db sqlutil.Queryable, limit, offset int) (users []*User, err error) {
 	users = make([]*User, 0)
-	rows, e := db.Query(fmt.Sprintf("SELECT %s FROM users WHERE deleted=false ORDER BY created DESC LIMIT $1 OFFSET $2", userColumns()), p.Size, p.Offset())
+	rows, e := db.Query(fmt.Sprintf("SELECT %s FROM users WHERE deleted=false ORDER BY created DESC LIMIT $1 OFFSET $2", userColumns()), limit, offset)
 	if e != nil {
 		if e == sql.ErrNoRows {
 			return []*User{}, nil
@@ -38,7 +39,7 @@ func scanUsers(rows *sql.Rows) ([]*User, error) {
 	return us, nil
 }
 
-func UsersSearch(db *sql.DB, query string, limit, offset int) ([]*User, error) {
+func UsersSearch(db sqlutil.Queryable, query string, limit, offset int) ([]*User, error) {
 	q := fmt.Sprintf("%%%s%%", query)
 	rows, err := db.Query(qUsersSearch, q, limit, offset)
 	if err != nil {

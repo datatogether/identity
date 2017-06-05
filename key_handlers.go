@@ -1,6 +1,8 @@
 package main
 
 import (
+	"github.com/archivers-space/identity/users"
+
 	// "encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -45,7 +47,7 @@ func CreateUserKeyHandler(w http.ResponseWriter, r *http.Request) {
 		req.Key = r.FormValue("key")
 	}
 
-	key, err := CreateKey(appDB, u, req.Name, []byte(req.Key))
+	key, err := users.CreateKey(appDB, u, req.Name, []byte(req.Key))
 	if err != nil {
 		log.Info(err)
 		ErrRes(w, err)

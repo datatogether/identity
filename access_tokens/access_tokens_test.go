@@ -1,4 +1,4 @@
-package main
+package access_tokens
 
 import (
 	"testing"
