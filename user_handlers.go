@@ -2,11 +2,11 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/archivers-space/identity/users"
+	"github.com/archivers-space/identity/user"
 	"net/http"
 )
 
-var UsersRequests = users.UserRequests{Store: appDB}
+var UsersRequests = user.UserRequests{Store: appDB}
 
 func UsersHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -34,14 +34,14 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 
 func SingleUserHandler(w http.ResponseWriter, r *http.Request) {
 	envelope := r.FormValue("envelope") != "false"
-	p := &users.UsersGetParams{
-		Subject: &users.User{
+	p := &user.UsersGetParams{
+		Subject: &user.User{
 			Id:       r.FormValue("id"),
 			Username: r.FormValue("username"),
 			// accessToken: r.FormValue("access_token"),
 		},
 	}
-	res := &users.User{}
+	res := &user.User{}
 	if err := UsersRequests.Get(p, res); err != nil {
 		ErrRes(w, err)
 		return
@@ -60,12 +60,12 @@ func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	} else {
 		page := PageFromRequest(r)
-		p := &users.UsersListParams{
+		p := &user.UsersListParams{
 			User:   sessionUser(r),
 			Limit:  page.Size,
 			Offset: page.Offset(),
 		}
-		res := []*users.User{}
+		res := []*user.User{}
 		if err := UsersRequests.List(p, &res); err != nil {
 			ErrRes(w, err)
 			return
@@ -79,7 +79,7 @@ func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 // Create a user from the api, feed password in as a query param
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	// sess := sessionUser(r)
-	u := users.NewUser("")
+	u := user.NewUser("")
 	pw := ""
 
 	if isJsonRequest(r) {
@@ -92,7 +92,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 			ErrRes(w, NewFmtError(http.StatusBadRequest, "error decoding json: %s", err.Error()))
 			return
 		}
-		u = &users.User{
+		u = &user.User{
 			Username: params.Username,
 			Email:    params.Email,
 			// password: params.Password,
@@ -105,12 +105,12 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		pw = r.FormValue("password")
 	}
 
-	p := &users.UsersCreateParams{
+	p := &user.UsersCreateParams{
 		User:     u,
 		Password: pw,
 	}
 
-	res := &users.User{}
+	res := &user.User{}
 	if err := UsersRequests.Create(p, res); err != nil {
 		ErrRes(w, err)
 		return
@@ -145,7 +145,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 // SaveUserHandler updates a user
 func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
-	u := &users.User{}
+	u := &user.User{}
 	if isJsonRequest(r) {
 		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 			ErrRes(w, NewFmtError(http.StatusBadRequest, err.Error()))
@@ -155,12 +155,12 @@ func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
 		// TODO - fill user out from form values
 	}
 
-	p := &users.UsersSaveParams{
+	p := &user.UsersSaveParams{
 		User:    sessionUser(r),
 		Subject: u,
 	}
 
-	res := &users.User{}
+	res := &user.User{}
 	if err := UsersRequests.Save(p, res); err != nil {
 		ErrRes(w, err)
 		return
@@ -171,14 +171,14 @@ func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
 
 func UsersSearchHandler(w http.ResponseWriter, r *http.Request) {
 	page := PageFromRequest(r)
-	p := &users.UsersSearchParams{
+	p := &user.UsersSearchParams{
 		User:   sessionUser(r),
 		Query:  r.FormValue("q"),
 		Limit:  page.Size,
 		Offset: page.Offset(),
 	}
 
-	res := []*users.User{}
+	res := []*user.User{}
 	if err := UsersRequests.Search(p, &res); err != nil {
 		ErrRes(w, err)
 		return

@@ -1,7 +1,8 @@
-package users
+package user
 
 import (
 	"database/sql"
+	"github.com/archivers-space/errors"
 	"github.com/archivers-space/sqlutil"
 	"golang.org/x/oauth2"
 	"time"
@@ -44,7 +45,7 @@ func (g *UserOauthToken) Read(db *sql.DB) error {
 		}
 	}
 	if g.User == nil || g.Service == "" {
-		return ErrNotFound
+		return errors.ErrNotFound
 	}
 	return g.UnmarshalSQL(db.QueryRow(qUserOauthTokenByUserAndService, g.User.Id, g.Service))
 }
@@ -52,7 +53,7 @@ func (g *UserOauthToken) Read(db *sql.DB) error {
 func (t *UserOauthToken) Save(db *sql.DB) error {
 	prev := &UserOauthToken{User: t.User, Service: t.Service}
 	if err := prev.Read(db); err != nil {
-		if err == ErrNotFound {
+		if err == errors.ErrNotFound {
 			if _, err := db.Exec(qUserOauthTokenInsert, t.SQLArgs()...); err != nil {
 				// return NewFmtError(500, err.Error())
 				return err
@@ -70,7 +71,7 @@ func (t *UserOauthToken) Save(db *sql.DB) error {
 
 func (g *UserOauthToken) Delete(db *sql.DB) error {
 	if g.User == nil {
-		return ErrNotFound
+		return errors.ErrNotFound
 	}
 	_, err := db.Exec(qUserOauthTokenDelete, g.User.Id, g.Service)
 	return err
@@ -85,7 +86,7 @@ func (g *UserOauthToken) UnmarshalSQL(row sqlutil.Scannable) error {
 
 	if err := row.Scan(&userId, &service, &access, &tType, &refresh, &expiry); err != nil {
 		if err == sql.ErrNoRows {
-			return ErrNotFound
+			return errors.ErrNotFound
 		}
 		return err
 	}

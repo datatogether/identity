@@ -1,9 +1,10 @@
-package users
+package user
 
 import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
+	"github.com/archivers-space/errors"
 	"github.com/archivers-space/identity/access_tokens"
 	"github.com/archivers-space/sqlutil"
 	"github.com/pborman/uuid"
@@ -149,7 +150,7 @@ func (u *User) Read(db sqlutil.Queryable) error {
 		clause = "access_token"
 		value = u.accessToken
 	} else {
-		return ErrNotFound
+		return errors.ErrNotFound
 	}
 
 	row := db.QueryRow(fmt.Sprintf("SELECT %s FROM users WHERE %s= $1 AND deleted=false", userColumns(), clause), value)
@@ -157,10 +158,9 @@ func (u *User) Read(db sqlutil.Queryable) error {
 	err := user.UnmarshalSQL(row)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return ErrNotFound
+			return errors.ErrNotFound
 		} else {
-			// return New500Error(err.Error())
-			return err
+			return errors.New500Error(err.Error())
 		}
 	}
 
@@ -199,17 +199,14 @@ func (u *User) Save(db sqlutil.Transactable) error {
 	prev := NewUser(u.Id)
 	if err := prev.Read(db); err != nil {
 		// create if user doesn't exist
-		if err == ErrNotFound {
+		if err == errors.ErrNotFound {
 			if err = u.validateCreate(db); err != nil {
 				return err
 			}
 
 			hash, e := bcrypt.GenerateFromPassword([]byte(u.password), bcrypt.DefaultCost)
 			if e != nil {
-				// TODO - resolve these old Err500IfErr funcs by either removing
-				// or re-implementing as a package
-				// return Error500IfErr(e)
-				return e
+				return errors.Error500IfErr(e)
 			}
 
 			u.Id = uuid.New()
@@ -219,13 +216,12 @@ func (u *User) Save(db sqlutil.Transactable) error {
 			// create access token
 			token, e := access_tokens.Create(db)
 			if e != nil {
-				// return Error500IfErr(e)
-				return e
+				return errors.Error500IfErr(e)
 			}
 			u.accessToken = token
 
 			if _, e = db.Exec("INSERT INTO users VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, false, $12, false)", u.Id, u.Created, u.Updated, u.Username, u.Type, hash, u.Email, u.Name, u.Description, u.HomeUrl, u.emailConfirmed, u.accessToken); e != nil {
-				return NewFmtError(500, e.Error())
+				return errors.NewFmtError(500, e.Error())
 			}
 
 			// create default keypair using newly-minted user
@@ -251,13 +247,12 @@ func (u *User) Save(db sqlutil.Transactable) error {
 		u.Updated = time.Now().Unix()
 		tx, err := db.Begin()
 		if err != nil {
-			// return New500Error(err.Error())
-			return err
+			return errors.New500Error(err.Error())
 		}
 
 		if _, err := tx.Exec("UPDATE users SET updated=$2, username= $3, type=$4, name=$5, description=$6, home_url= $7, email_confirmed=$8, access_token=$9 WHERE id= $1 AND deleted=false", u.Id, u.Updated, u.Username, u.Type, u.Name, u.Description, u.HomeUrl, u.emailConfirmed, u.accessToken); err != nil {
 			tx.Rollback()
-			// return Error500IfErr(err)
+			// return errors.Error500IfErr(err)
 			return err
 		}
 
@@ -267,23 +262,21 @@ func (u *User) Save(db sqlutil.Transactable) error {
 
 			// if _, err := tx.Exec("UPDATE datasets SET username= $2 WHERE username= $1", prev.Username, u.Username); err != nil {
 			// 	tx.Rollback()
-			// 	return Error500IfErr(err)
+			// 	return errors.Error500IfErr(err)
 			// }
 
 			// if _, err := tx.Exec("UPDATE query SET ns_user= $2 WHERE ns_user= $1", prev.Username, u.Username); err != nil {
 			// 	tx.Rollback()
-			// 	return Error500IfErr(err)
+			// 	return errors.Error500IfErr(err)
 			// }
 		}
 
 		if err := tx.Commit(); err != nil {
 			tx.Rollback()
-			// return Error500IfErr(err)
-			return err
+			return errors.Error500IfErr(err)
 		}
 
-		// return Error500IfErr(err)
-		return err
+		return errors.Error500IfErr(err)
 	}
 
 	return nil
@@ -299,23 +292,20 @@ func (u *User) Delete(db sqlutil.Transactable) error {
 	}
 	tx, err := db.Begin()
 	if err != nil {
-		// return New500Error(err.Error())
-		return err
+		return errors.New500Error(err.Error())
 	}
 
 	u.Updated = time.Now().Unix()
 	if _, err := tx.Exec("UPDATE users SET updated= $2, deleted=true WHERE id= $1", u.Id, u.Updated); err != nil {
 		tx.Rollback()
-		// return Error500IfErr(err)
-		return err
+		return errors.Error500IfErr(err)
 	}
 
 	// TODO - Users that delete their profile will need to have all their datasets deleted as well
 
 	if err := tx.Commit(); err != nil {
 		tx.Rollback()
-		// return Error500IfErr(err)
-		return err
+		return errors.Error500IfErr(err)
 	}
 
 	return nil
@@ -328,16 +318,16 @@ func (u *User) validateCreate(db sqlutil.Queryable) error {
 	}
 
 	if taken, err := UsernameTaken(db, u.Username); err != nil {
-		// return Error500IfErr(err)
+		// return errors.Error500IfErr(err)
 		return err
 	} else if taken {
-		return ErrUsernameTaken
+		return errors.ErrUsernameTaken
 	}
 
 	if taken, err := EmailTaken(db, u.Email); err != nil {
-		return Error500IfErr(err)
+		return errors.Error500IfErr(err)
 	} else if taken {
-		return ErrEmailTaken
+		return errors.ErrEmailTaken
 	}
 
 	u.password = strings.TrimSpace(u.password)
@@ -360,10 +350,10 @@ func (u *User) validateCreate(db sqlutil.Queryable) error {
 func (u *User) valFields() error {
 	u.Username = strings.TrimSpace(u.Username)
 	if u.Username == "" {
-		return ErrUsernameRequired
+		return errors.ErrUsernameRequired
 	}
 	if !validUsername(u.Username) {
-		return ErrInvalidUsername
+		return errors.ErrInvalidUsername
 	}
 
 	// we don't require email b/c oauth won't always provide one, it is the
@@ -374,7 +364,7 @@ func (u *User) valFields() error {
 	// }
 	u.Email = strings.TrimSpace(u.Email)
 	if u.Email != "" && !validEmail(u.Email) {
-		return ErrInvalidEmail
+		return errors.ErrInvalidEmail
 	}
 
 	// let's not require a name
@@ -402,7 +392,7 @@ func (u *User) validateUpdate(db sqlutil.Queryable, prev *User) error {
 		if taken, err := UsernameTaken(db, u.Username); err != nil {
 			return err
 		} else if taken {
-			return ErrUsernameTaken
+			return errors.ErrUsernameTaken
 		}
 	}
 
@@ -410,7 +400,7 @@ func (u *User) validateUpdate(db sqlutil.Queryable, prev *User) error {
 		if taken, err := EmailTaken(db, u.Email); err != nil {
 			return err
 		} else if taken {
-			return ErrEmailTaken
+			return errors.ErrEmailTaken
 		}
 	}
 
@@ -438,21 +428,21 @@ func CreateUser(db sqlutil.Transactable, username, email, name, password string,
 	return
 }
 
-// attempt to authenticate a user, for now only returns either nil or ErrAccessDenied
+// attempt to authenticate a user, for now only returns either nil or errors.ErrAccessDenied
 // TODO - should also return 500-type errors when service is down
 func AuthenticateUser(db sqlutil.Queryable, username, password string) (u *User, err error) {
 	var hash []byte
 	u = &User{Username: username}
 	if err := u.Read(db); err != nil {
-		return nil, ErrAccessDenied
+		return nil, errors.ErrAccessDenied
 	}
 
 	if err := db.QueryRow("SELECT password_hash FROM users WHERE id= $1 AND deleted=false", u.Id).Scan(&hash); err != nil {
-		return nil, ErrAccessDenied
+		return nil, errors.ErrAccessDenied
 	}
 
 	if err := bcrypt.CompareHashAndPassword(hash, []byte(password)); err != nil {
-		return nil, ErrAccessDenied
+		return nil, errors.ErrAccessDenied
 	}
 
 	return u, nil
@@ -463,10 +453,10 @@ func AuthenticateUser(db sqlutil.Queryable, username, password string) (u *User,
 func (u *User) validatePassword() error {
 	u.password = strings.TrimSpace(u.password)
 	if u.password == "" {
-		return ErrPasswordRequired
+		return errors.ErrPasswordRequired
 	}
 	if len(u.password) < 6 {
-		return ErrPasswordTooShort
+		return errors.ErrPasswordTooShort
 	}
 	return nil
 }
@@ -480,11 +470,11 @@ func (u *User) SavePassword(db sqlutil.Execable, password string) error {
 
 	hash, err := bcrypt.GenerateFromPassword([]byte(u.password), bcrypt.DefaultCost)
 	if err != nil {
-		return Error500IfErr(err)
+		return errors.Error500IfErr(err)
 	}
 
 	_, err = db.Exec("UPDATE users SET password_hash=$2 WHERE id=$1 AND deleted=false", u.Id, []byte(hash))
-	return Error500IfErr(err)
+	return errors.Error500IfErr(err)
 }
 
 // construct the url for a user to confirm their email address

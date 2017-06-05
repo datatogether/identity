@@ -1,7 +1,8 @@
-package users
+package user
 
 import (
 	"database/sql"
+	"github.com/archivers-space/errors"
 	"github.com/archivers-space/sqlutil"
 	"net/url"
 	"regexp"
@@ -55,7 +56,7 @@ func UsernameTaken(db sqlutil.Queryable, username string) (taken bool, err error
 	if e == sql.ErrNoRows {
 		taken = false
 	} else if e != nil {
-		err = New500Error(e.Error())
+		err = errors.New500Error(e.Error())
 	}
 
 	return
@@ -68,7 +69,7 @@ func EmailTaken(db sqlutil.Queryable, email string) (taken bool, err error) {
 	if e == sql.ErrNoRows {
 		taken = false
 	} else if e != nil {
-		err = New500Error(e.Error())
+		err = errors.New500Error(e.Error())
 	}
 	return
 }
@@ -79,7 +80,7 @@ func PathTaken(db sqlutil.Queryable, path string) (taken bool, err error) {
 	if e == sql.ErrNoRows {
 		taken = false
 	} else if e != nil {
-		err = New500Error(e.Error())
+		err = errors.New500Error(e.Error())
 	}
 	return
 }
@@ -90,7 +91,7 @@ func DatasetExists(db sqlutil.Queryable, datasetId string) (exists bool, err err
 	if e == sql.ErrNoRows {
 		exists = false
 	} else if e != nil {
-		err = New500Error(e.Error())
+		err = errors.New500Error(e.Error())
 	}
 
 	return
@@ -99,17 +100,17 @@ func DatasetExists(db sqlutil.Queryable, datasetId string) (exists bool, err err
 // check if a user exists on a given database
 func ValidUser(db sqlutil.Queryable, u *User) (err error) {
 	if u == nil {
-		return ErrInvalidUser
+		return errors.ErrInvalidUser
 	}
 
 	if !validUuid(u.Id) {
-		return ErrInvalidUser
+		return errors.ErrInvalidUser
 	}
 
 	exists := false
 	err = db.QueryRow("SELECT exists(SELECT 1 FROM users WHERE id = $1 and deleted = false)", u.Id).Scan(&exists)
 	if err == sql.ErrNoRows || !exists {
-		err = ErrUserNotFound
+		err = errors.ErrUserNotFound
 	}
 
 	return

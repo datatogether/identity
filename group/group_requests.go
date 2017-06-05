@@ -1,8 +1,8 @@
-package groups
+package group
 
 import (
 	"github.com/archivers-space/errors"
-	"github.com/archivers-space/identity/users"
+	"github.com/archivers-space/identity/user"
 	"github.com/archivers-space/sqlutil"
 )
 
@@ -17,7 +17,7 @@ type GroupRequests struct {
 // options for scoping & shaping the desired response
 type GroupsListParams struct {
 	// the user performing the request
-	User *users.User `required:"true"`
+	User *user.User `required:"true"`
 	// users requests embeds pagination info
 	Limit  int
 	Offset int
@@ -34,7 +34,7 @@ func (r GroupRequests) List(p *GroupsListParams, res *[]*Group) error {
 }
 
 type GroupsGetParams struct {
-	User  *users.User
+	User  *user.User
 	Group *Group
 }
 
@@ -47,7 +47,7 @@ func (r GroupRequests) Get(p *GroupsGetParams, res *Group) error {
 }
 
 type GroupsCreateParams struct {
-	User  *users.User
+	User  *user.User
 	Group *Group
 }
 
@@ -61,7 +61,7 @@ func (r GroupRequests) Create(p *GroupsCreateParams, res *Group) error {
 }
 
 type GroupsSaveParams struct {
-	User  *users.User
+	User  *user.User
 	Group *Group
 }
 
@@ -81,7 +81,7 @@ func (r GroupRequests) Save(p *GroupsSaveParams, res *Group) error {
 
 type GroupsDeleteParams struct {
 	Interface string
-	User      *users.User
+	User      *user.User
 	Group     *Group
 }
 

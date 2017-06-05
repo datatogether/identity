@@ -1,4 +1,4 @@
-package groups
+package group
 
 const qGroups = `
 SELECT

@@ -1,4 +1,4 @@
-package users
+package user
 
 import (
 	"crypto/rand"
@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	"encoding/pem"
 	"fmt"
+	"github.com/archivers-space/errors"
 	"github.com/archivers-space/sqlutil"
 	"time"
 
@@ -121,7 +122,7 @@ func NewKey(name string, u *User) (*Key, error) {
 func CreateKey(db sqlutil.Execable, u *User, name string, publicKey []byte) (*Key, error) {
 	key, comment, _, _, err := ssh.ParseAuthorizedKey(publicKey)
 	if err != nil {
-		return nil, ErrInvalidKey
+		return nil, errors.ErrInvalidKey
 	}
 
 	if name == "" && comment != "" {
@@ -144,7 +145,7 @@ func CreateKey(db sqlutil.Execable, u *User, name string, publicKey []byte) (*Ke
 	}
 
 	if _, e := db.Exec("INSERT INTO keys VALUES ($1, $2, $3, $4, $5, $6, $7, null, false)", k.Type, k.Sha256[:], k.Created, k.LastSeen, k.Name, k.User.Id, k.Public); e != nil {
-		return nil, NewFmtError(500, e.Error())
+		return nil, errors.NewFmtError(500, e.Error())
 	}
 
 	return k, nil
@@ -154,9 +155,9 @@ func (key *Key) Read(db sqlutil.Queryable) error {
 	row := db.QueryRow(fmt.Sprintf("SELECT %s FROM keys WHERE sha_256=$1 AND deleted=false", keyColumns()), key.Sha256[:])
 	if err := key.UnmarshalSQL(row); err != nil {
 		if err == sql.ErrNoRows {
-			return ErrNotFound
+			return errors.ErrNotFound
 		} else {
-			return New500Error(err.Error())
+			return errors.New500Error(err.Error())
 		}
 	}
 	return nil
@@ -169,10 +170,10 @@ func (k *Key) Save(db sqlutil.Execable) error {
 
 	prev := &Key{Sha256: k.Sha256}
 	if err := prev.Read(db); err != nil {
-		if err == ErrNotFound {
+		if err == errors.ErrNotFound {
 			k.Created = time.Now().Unix()
 			if _, e := db.Exec("INSERT INTO keys VALUES ($1, $2, $3, $4, $5, $6, $7, $8, false)", k.Type, k.Sha256[:], k.Created, k.LastSeen, k.Name, k.User.Id, k.Public, k.private); e != nil {
-				return NewFmtError(500, e.Error())
+				return errors.NewFmtError(500, e.Error())
 			}
 		} else {
 			return err
@@ -193,11 +194,11 @@ func (key *Key) Delete(db sqlutil.Execable) error {
 
 func (key *Key) validate(db sqlutil.Queryable) error {
 	if key.User == nil {
-		return ErrUserRequired
+		return errors.ErrUserRequired
 	}
 
 	if key.Name == "" {
-		return ErrNameRequired
+		return errors.ErrNameRequired
 	}
 
 	// TODO - implement UserExists

@@ -3,7 +3,7 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/archivers-space/identity/users"
+	"github.com/archivers-space/identity/user"
 	"github.com/archivers-space/sqlutil"
 	"strings"
 	"time"
@@ -95,12 +95,12 @@ func (r *ResetToken) Usable() error {
 }
 
 // use the token to reset the user's password, returning the updated user
-func (r *ResetToken) Consume(db sqlutil.Execable, password string) (*users.User, error) {
+func (r *ResetToken) Consume(db sqlutil.Execable, password string) (*user.User, error) {
 	if err := r.Usable(); err != nil {
 		return nil, err
 	}
 
-	u := users.NewUser("")
+	u := user.NewUser("")
 	u.Email = r.Email
 	if err := u.Read(db); err != nil {
 		return u, err

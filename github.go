@@ -4,7 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
-	"github.com/archivers-space/identity/users"
+	"github.com/archivers-space/identity/user"
 	"golang.org/x/oauth2"
 	"net/http"
 )
@@ -15,20 +15,20 @@ type Github struct {
 
 func NewGithub(token *oauth2.Token) Github {
 	return Github{
-		client: users.GithubOAuth.Client(context.Background(), token),
+		client: user.GithubOAuth.Client(context.Background(), token),
 	}
 }
 
-func (g Github) ExtractUser() (*users.User, error) {
+func (g Github) ExtractUser() (*user.User, error) {
 	info, err := g.CurrentUserInfo()
 	if err != nil {
 		return nil, err
 	}
 
-	return &users.User{
+	return &user.User{
 		Username: objStringVal(info, "login"),
 		// TODO - interpret github "type" field
-		Type:        users.UserTypeUser,
+		Type:        user.UserTypeUser,
 		Name:        objStringVal(info, "name"),
 		Description: objStringVal(info, "bio"),
 		Email:       objStringVal(info, "email"),

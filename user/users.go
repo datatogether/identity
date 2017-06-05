@@ -1,8 +1,9 @@
-package users
+package user
 
 import (
 	"database/sql"
 	"fmt"
+	"github.com/archivers-space/errors"
 	"github.com/archivers-space/sqlutil"
 )
 
@@ -14,11 +15,11 @@ func ReadUsers(db sqlutil.Queryable, limit, offset int) (users []*User, err erro
 		if e == sql.ErrNoRows {
 			return []*User{}, nil
 		}
-		return nil, New500Error(e.Error())
+		return nil, errors.New500Error(e.Error())
 	}
 	defer rows.Close()
 	if us, e := scanUsers(rows); e != nil {
-		return nil, New500Error(e.Error())
+		return nil, errors.New500Error(e.Error())
 	} else {
 		return us, nil
 	}

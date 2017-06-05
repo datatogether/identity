@@ -1,9 +1,9 @@
-package groups
+package group
 
 import (
 	"database/sql"
 	"github.com/archivers-space/errors"
-	"github.com/archivers-space/identity/users"
+	"github.com/archivers-space/identity/user"
 	"github.com/archivers-space/sqlutil"
 	"github.com/pborman/uuid"
 	"time"
@@ -11,15 +11,15 @@ import (
 
 // a user reset token
 type Group struct {
-	Id          string      `json:"id" sql:"id"`
-	Created     int64       `json:"created" sql:"created"`
-	Updated     int64       `json:"updated" sql:"updated"`
-	Title       string      `json:"title"`
-	Description string      `json:"description"`
-	Color       string      `json:"color"`
-	PosterUrl   string      `json:"posterUrl"`
-	ProfileUrl  string      `json:"profileUrl"`
-	Creator     *users.User `json:"creator"`
+	Id          string     `json:"id" sql:"id"`
+	Created     int64      `json:"created" sql:"created"`
+	Updated     int64      `json:"updated" sql:"updated"`
+	Title       string     `json:"title"`
+	Description string     `json:"description"`
+	Color       string     `json:"color"`
+	PosterUrl   string     `json:"posterUrl"`
+	ProfileUrl  string     `json:"profileUrl"`
+	Creator     *user.User `json:"creator"`
 }
 
 // validate a group
@@ -27,7 +27,7 @@ func (r *Group) validate(db sqlutil.Queryable) error {
 	return nil
 }
 
-func (g *Group) InviteUser(db sqlutil.Execable, u *users.User) error {
+func (g *Group) InviteUser(db sqlutil.Execable, u *user.User) error {
 	_, err := db.Exec(qGroupInviteUser, g.Id, u.Id)
 	return err
 }
@@ -90,7 +90,7 @@ func (g *Group) UnmarshalSQL(row sqlutil.Scannable) error {
 		Color:       color,
 		ProfileUrl:  profileUrl,
 		PosterUrl:   posterUrl,
-		Creator:     &users.User{Id: creatorId},
+		Creator:     &user.User{Id: creatorId},
 	}
 
 	*g = *group

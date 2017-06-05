@@ -4,7 +4,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/archivers-space/identity/users"
+	"github.com/archivers-space/identity/user"
 	"golang.org/x/oauth2"
 	"net/http"
 )
@@ -39,7 +39,7 @@ func GithubRepoAccessHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	for _, t := range tokens {
-		if t.Service == users.OauthServiceGithub {
+		if t.Service == user.OauthServiceGithub {
 			g := NewGithub(t.Token)
 			info, err := g.CurrentUserInfo()
 			if err != nil {
@@ -80,7 +80,7 @@ func GithubOauthHandler(w http.ResponseWriter, r *http.Request) {
 		redirect = cfg.UrlRoot
 	}
 	b64 := base64.StdEncoding.EncodeToString([]byte(redirect))
-	url := users.GithubOAuth.AuthCodeURL(b64, oauth2.AccessTypeOffline)
+	url := user.GithubOAuth.AuthCodeURL(b64, oauth2.AccessTypeOffline)
 	// log.Info("Visit the URL for the auth dialog: %v", url)
 	http.Redirect(w, r, url, http.StatusTemporaryRedirect)
 }
@@ -88,7 +88,7 @@ func GithubOauthHandler(w http.ResponseWriter, r *http.Request) {
 // Handle Oauth response from github
 // TODO - refactor ASAP.
 func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
-	user := sessionUser(r)
+	u := sessionUser(r)
 	ctx := r.Context()
 
 	redirectBytes, err := base64.StdEncoding.DecodeString(r.FormValue("state"))
@@ -100,14 +100,14 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 	redirect := string(redirectBytes)
 
 	code := r.FormValue("code")
-	tok, err := users.GithubOAuth.Exchange(ctx, code)
+	tok, err := user.GithubOAuth.Exchange(ctx, code)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	t := &users.UserOauthToken{
-		User:    user,
-		Service: users.OauthServiceGithub,
+	t := &user.UserOauthToken{
+		User:    u,
+		Service: user.OauthServiceGithub,
 		Token:   tok,
 	}
 
@@ -121,13 +121,7 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 			http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 			return
 		}
-	} else if user.Anonymous {
-		// svc, err := t.UserService()
-		// if err != nil {
-		// 	log.Info(err.Error())
-		// 	ErrRes(w, err)
-		// 	return
-		// }
+	} else if u.Anonymous {
 		u, err := NewGithub(t.Token).ExtractUser()
 		if err != nil {
 			log.Info(err.Error())
@@ -136,7 +130,7 @@ func GithubOAuthCallbackHandler(w http.ResponseWriter, r *http.Request) {
 		}
 		t.User = u
 
-		emailUser := &users.User{Email: u.Email}
+		emailUser := &user.User{Email: u.Email}
 		if err := emailUser.Read(appDB); err == nil {
 			// if we have a matching email, connect the two accounts
 			t.User = emailUser

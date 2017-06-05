@@ -1,6 +1,7 @@
-package users
+package user
 
 import (
+	"github.com/archivers-space/errors"
 	"github.com/archivers-space/sqlutil"
 	"strings"
 )
@@ -54,10 +55,10 @@ type UsersCreateParams struct {
 func (r UserRequests) Create(p *UsersCreateParams, res *User) error {
 	p.User.password = p.Password
 	if strings.TrimSpace(p.User.password) == "" {
-		return ErrPasswordRequired
+		return errors.ErrPasswordRequired
 	}
 	if strings.TrimSpace(p.User.Email) == "" {
-		return ErrEmailRequired
+		return errors.ErrEmailRequired
 	}
 
 	if err := p.User.Save(r.Store); err != nil {
@@ -75,7 +76,7 @@ type UsersSaveParams struct {
 
 func (r UserRequests) Save(p *UsersSaveParams, res *User) error {
 	if !p.User.isAdmin && p.User.Id != p.Subject.Id {
-		return ErrAccessDenied
+		return errors.ErrAccessDenied
 	}
 
 	if err := p.Subject.Save(r.Store); err != nil {
