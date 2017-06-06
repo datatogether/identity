@@ -13,7 +13,7 @@
 		},
 		{
 			"ImportPath": "github.com/archivers-space/sqlutil",
-			"Rev": "c499f7a3d5e714cf57707c868acbb3cd7685520d"
+			"Rev": "c46a8556b3dd826ba8cec95229e0c294e5b4d4a5"
 		},
 		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",

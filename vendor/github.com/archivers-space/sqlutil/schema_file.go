@@ -39,13 +39,14 @@ type SchemaFile struct {
 // DROP TABLE IF EXISTS foo, bar, baz ...
 func (s *SchemaFile) DropAll(db Execable) error {
 	_, err := s.file.Exec(db, "drop-all")
-	return err
+	return fmt.Errorf("error executing 'drop-all': %s", err.Error())
 }
 
 func (s *SchemaFile) Create(db Execable, tables ...string) error {
 	for _, t := range tables {
-		if _, err := s.file.Exec(db, fmt.Sprintf("create-%s", t)); err != nil {
-			return err
+		cmd := fmt.Sprintf("create-%s", t)
+		if _, err := s.file.Exec(db, cmd); err != nil {
+			return fmt.Errorf("error executing '%s': %s", cmd, err.Error())
 		}
 	}
 	return nil

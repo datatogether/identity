@@ -2,6 +2,7 @@ package reset_token
 
 import (
 	"database/sql"
+	"fmt"
 	"github.com/archivers-space/sqlutil"
 	_ "github.com/lib/pq"
 	"os"
@@ -13,7 +14,8 @@ var testDB *sql.DB
 func TestMain(m *testing.M) {
 	var err error
 	if os.Getenv("POSTGRES_DB_URL") == "" {
-		panic("POSTGRES_DB_URL must be defined")
+		fmt.Printf("POSTGRES_DB_URL env var must be defined\n")
+		os.Exit(1)
 	}
 
 	ts, err := sqlutil.InitTestSuite(&sqlutil.TestSuiteOpts{
@@ -28,7 +30,8 @@ func TestMain(m *testing.M) {
 	})
 
 	if err != nil {
-		panic(err)
+		fmt.Printf("error initializing test suite: %s\n", err.Error())
+		os.Exit(1)
 	}
 	testDB = ts.DB
 
@@ -38,7 +41,7 @@ func TestMain(m *testing.M) {
 
 const schema = `
 -- name: drop-all
-DROP TABLE IF EXISTS users, reset_tokens;
+DROP TABLE IF EXISTS users, reset_tokens CASCADE;
 
 -- name: create-users
 CREATE TABLE users (

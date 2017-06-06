@@ -44,7 +44,7 @@ func (d *DataFile) Commands() []string {
 func (d *DataFile) DeleteAll(db Execable) error {
 	for _, cmd := range commandsWithPrefix(d.file, "delete") {
 		if _, err := d.file.Exec(db, cmd); err != nil {
-			return fmt.Errorf("error executing command '%s': %s", cmd, err)
+			return fmt.Errorf("error executing '%s': %s", cmd, err)
 		}
 	}
 	return nil
@@ -53,11 +53,11 @@ func (d *DataFile) DeleteAll(db Execable) error {
 func (d *DataFile) Reset(db Execable, tables ...string) error {
 	for _, t := range tables {
 		if _, err := d.file.Exec(db, fmt.Sprintf("delete-%s", t)); err != nil {
-			return fmt.Errorf("error executing command 'delete-%s': %s", t, err)
+			return fmt.Errorf("error executing 'delete-%s': %s", t, err)
 		}
 
 		if _, err := d.file.Exec(db, fmt.Sprintf("insert-%s", t)); err != nil {
-			return fmt.Errorf("error executing command 'insert-%s': %s", t, err)
+			return fmt.Errorf("error executing 'insert-%s': %s", t, err)
 		}
 	}
 	return nil
