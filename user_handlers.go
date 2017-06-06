@@ -2,8 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/archivers-space/identity/user"
 	"net/http"
 )
+
+var UsersRequests = user.UserRequests{Store: appDB}
 
 func UsersHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -31,47 +34,53 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 
 func SingleUserHandler(w http.ResponseWriter, r *http.Request) {
 	envelope := r.FormValue("envelope") != "false"
-	req := &UserRequest{
-		Subject: &User{
-			Id:          r.FormValue("id"),
-			Username:    r.FormValue("username"),
-			accessToken: r.FormValue("access_token"),
+	p := &user.UsersGetParams{
+		Subject: &user.User{
+			Id:       r.FormValue("id"),
+			Username: r.FormValue("username"),
+			// accessToken: r.FormValue("access_token"),
 		},
 	}
-	ExecRequest(w, envelope, req)
+	res := &user.User{}
+	if err := UsersRequests.Get(p, res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+	Res(w, envelope, res)
 }
 
 // list users or get a single user if supplied with a "username" formValue
 func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
-	var req Request
 	envelope := r.FormValue("envelope") != "false"
 	username := r.FormValue("username")
 	id := r.FormValue("id")
 
 	if username != "" || id != "" {
-		req = &UserRequest{
-			Interface: httpApiInterface,
-			User:      sessionUser(r),
-			Subject: &User{
-				Id:       id,
-				Username: username,
-			},
-		}
+		SingleUserHandler(w, r)
+		return
 	} else {
-		req = &UsersRequest{
-			Interface: httpApiInterface,
-			User:      sessionUser(r),
-			Page:      PageFromRequest(r),
+		page := PageFromRequest(r)
+		p := &user.UsersListParams{
+			User:   sessionUser(r),
+			Limit:  page.Size,
+			Offset: page.Offset(),
 		}
+		res := []*user.User{}
+		if err := UsersRequests.List(p, &res); err != nil {
+			ErrRes(w, err)
+			return
+		}
+		Res(w, envelope, res)
 	}
 
-	ExecRequest(w, envelope, req)
+	// ExecRequest(w, envelope, req)
 }
 
 // Create a user from the api, feed password in as a query param
 func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 	// sess := sessionUser(r)
-	u := NewUser("")
+	u := user.NewUser("")
+	pw := ""
 
 	if isJsonRequest(r) {
 		params := struct {
@@ -83,25 +92,26 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 			ErrRes(w, NewFmtError(http.StatusBadRequest, "error decoding json: %s", err.Error()))
 			return
 		}
-		u = &User{
+		u = &user.User{
 			Username: params.Username,
 			Email:    params.Email,
-			password: params.Password,
+			// password: params.Password,
 		}
+		pw = params.Password
 	} else {
 		// default to form data values
 		u.Username = r.FormValue("username")
 		u.Email = r.FormValue("email")
-		u.password = r.FormValue("password")
+		pw = r.FormValue("password")
 	}
 
-	req := &CreateUserRequest{
-		Interface: httpApiInterface,
-		User:      u,
+	p := &user.UsersCreateParams{
+		User:     u,
+		Password: pw,
 	}
 
-	_, err := req.Exec()
-	if err != nil {
+	res := &user.User{}
+	if err := UsersRequests.Create(p, res); err != nil {
 		ErrRes(w, err)
 		return
 	}
@@ -112,7 +122,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	Res(w, true, u)
+	Res(w, true, res)
 }
 
 // confirm a user's email address
@@ -135,7 +145,7 @@ func CreateUserHandler(w http.ResponseWriter, r *http.Request) {
 
 // SaveUserHandler updates a user
 func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
-	u := &User{}
+	u := &user.User{}
 	if isJsonRequest(r) {
 		if err := json.NewDecoder(r.Body).Decode(&u); err != nil {
 			ErrRes(w, NewFmtError(http.StatusBadRequest, err.Error()))
@@ -145,23 +155,35 @@ func SaveUserHandler(w http.ResponseWriter, r *http.Request) {
 		// TODO - fill user out from form values
 	}
 
-	req := &SaveUserRequest{
-		// Interface: httpApiInterface,
+	p := &user.UsersSaveParams{
 		User:    sessionUser(r),
 		Subject: u,
 	}
 
-	ExecRequest(w, true, req)
+	res := &user.User{}
+	if err := UsersRequests.Save(p, res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+
+	Res(w, true, res)
 }
 
 func UsersSearchHandler(w http.ResponseWriter, r *http.Request) {
-	req := &UsersSearchRequest{
-		User:  sessionUser(r),
-		Query: r.FormValue("q"),
-		Page:  PageFromRequest(r),
+	page := PageFromRequest(r)
+	p := &user.UsersSearchParams{
+		User:   sessionUser(r),
+		Query:  r.FormValue("q"),
+		Limit:  page.Size,
+		Offset: page.Offset(),
 	}
 
-	ExecRequest(w, true, req)
+	res := []*user.User{}
+	if err := UsersRequests.Search(p, &res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+	Res(w, true, res)
 }
 
 // delete a user

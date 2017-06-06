@@ -1,5 +1,5 @@
 -- name: drop-all
-DROP TABLE IF EXISTS user_keys, oauth_users, keys, users, reset_tokens, groups, group_users CASCADE;
+DROP TABLE IF EXISTS user_keys, oauth_users, oauth_tokens, keys, users, reset_tokens, groups, group_users CASCADE;
 
 -- name: create-users
 CREATE TABLE users (

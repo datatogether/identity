@@ -3,6 +3,10 @@ package main
 import (
 	"database/sql"
 	"fmt"
+	"github.com/archivers-space/identity/jwt"
+	"github.com/archivers-space/identity/oauth"
+	"github.com/archivers-space/sqlutil"
+	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"net/http"
 	"os"
@@ -19,7 +23,7 @@ var (
 	log = logrus.New()
 
 	// application database connection
-	appDB *sql.DB
+	appDB = &sql.DB{}
 
 	// cookie session storage
 	sessionStore *sessions.CookieStore
@@ -40,17 +44,17 @@ func main() {
 		// panic if the server is missing a vital configuration detail
 		panic(fmt.Errorf("server configuration error: %s", err.Error()))
 	}
-	if err = initKeys(cfg); err != nil {
-		panic(fmt.Errorf("server keys error: %s", err.Error()))
-	}
-	initOauth()
+
+	oauth.InitOauth(cfg.GithubAppId, cfg.GithubAppSecret)
+	jwt.InitKeys(cfg.PublicKey, cfg.PrivateKey)
 
 	sessionStore = sessions.NewCookieStore([]byte(cfg.SessionSecret))
 	if cfg.UserCookieDomain != "" {
 		sessionStore.Options.Domain = cfg.UserCookieDomain
 	}
 
-	connectToAppDb()
+	go sqlutil.ConnectToDb("postgres", cfg.PostgresDbUrl, appDB)
+	go listenRpc()
 
 	s := &http.Server{}
 	// connect mux to server

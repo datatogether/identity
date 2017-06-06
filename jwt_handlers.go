@@ -3,6 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/archivers-space/identity/jwt"
+	"github.com/archivers-space/identity/user"
 	"net/http"
 )
 
@@ -45,13 +47,13 @@ func JwtTokenHandler(w http.ResponseWriter, r *http.Request) {
 		login.Password = r.FormValue("password")
 	}
 
-	u, err := AuthenticateUser(appDB, login.Username, login.Password)
+	u, err := user.AuthenticateUser(appDB, login.Username, login.Password)
 	if err != nil {
 		ErrRes(w, ErrInvalidUserNamePasswordCombo)
 		return
 	}
 
-	tokenString, err := createToken(u)
+	tokenString, err := jwt.CreateToken(u)
 	if err != nil {
 		w.WriteHeader(http.StatusInternalServerError)
 		fmt.Fprintln(w, "Sorry, error while Signing Token!")

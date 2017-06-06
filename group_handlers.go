@@ -2,8 +2,11 @@ package main
 
 import (
 	"encoding/json"
+	"github.com/archivers-space/identity/group"
 	"net/http"
 )
+
+var GroupsRequests = group.GroupRequests{Store: appDB}
 
 func GroupsHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
@@ -37,32 +40,45 @@ func GroupHandler(w http.ResponseWriter, r *http.Request) {
 
 func ReadGroupHandler(w http.ResponseWriter, r *http.Request) {
 	envelope := r.FormValue("envelope") != "false"
-	req := &GroupRequest{
-		Group: &Group{
+	p := &group.GroupsGetParams{
+		Group: &group.Group{
 			Id: r.FormValue("id"),
 		},
 	}
-	ExecRequest(w, envelope, req)
+
+	res := &group.Group{}
+	if err := GroupsRequests.Get(p, res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+
+	Res(w, envelope, res)
 }
 
 // list users or get a single user if supplied with a "username" formValue
 func ListGroupsHandler(w http.ResponseWriter, r *http.Request) {
-	var req Request
 	envelope := r.FormValue("envelope") != "false"
 
-	req = &GroupsRequest{
-		Interface: httpApiInterface,
-		User:      sessionUser(r),
-		Page:      PageFromRequest(r),
+	page := PageFromRequest(r)
+	p := &group.GroupsListParams{
+		User:   sessionUser(r),
+		Limit:  page.Size,
+		Offset: page.Offset(),
 	}
 
-	ExecRequest(w, envelope, req)
+	res := []*group.Group{}
+	if err := GroupsRequests.List(p, &res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+
+	Res(w, envelope, res)
 }
 
 // SaveGroupHandler updates a user
 func SaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 	sess := sessionUser(r)
-	g := &Group{}
+	g := &group.Group{}
 	if isJsonRequest(r) {
 		if err := json.NewDecoder(r.Body).Decode(&g); err != nil {
 			ErrRes(w, NewFmtError(http.StatusBadRequest, err.Error()))
@@ -77,23 +93,33 @@ func SaveGroupHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	g.Creator = sess
-	req := &SaveGroupRequest{
-		Interface: httpApiInterface,
-		User:      sess,
-		Group:     g,
+	p := &group.GroupsSaveParams{
+		User:  sess,
+		Group: g,
+	}
+	res := &group.Group{}
+	if err := GroupsRequests.Save(p, res); err != nil {
+		ErrRes(w, err)
+		return
 	}
 
-	ExecRequest(w, true, req)
+	Res(w, true, res)
 }
 
 // delete a user
 func DeleteGroupHandler(w http.ResponseWriter, r *http.Request) {
-	req := &DeleteGroupRequest{
+	var res bool
+	p := &group.GroupsDeleteParams{
 		User: sessionUser(r),
-		Group: &Group{
+		Group: &group.Group{
 			Id: r.FormValue("id"),
 		},
 	}
 
-	ExecRequest(w, true, req)
+	if err := GroupsRequests.Delete(p, &res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+
+	Res(w, true, res)
 }
