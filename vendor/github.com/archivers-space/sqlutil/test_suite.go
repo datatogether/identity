@@ -6,8 +6,8 @@ import (
 
 type TestSuite struct {
 	DB      *sql.DB
-	Schema  *SchemaFile
-	Data    *DataFile
+	Schema  *SchemaCommands
+	Data    *DataCommands
 	Cascade []string
 }
 
@@ -33,14 +33,14 @@ func InitTestSuite(o *TestSuiteOpts) (*TestSuite, error) {
 	ts.DB = db
 
 	if o.SchemaPath != "" && o.DataPath != "" {
-		sf, err := LoadSchemaFile(o.SchemaPath)
+		sf, err := LoadSchemaCommands(o.SchemaPath)
 		if err != nil {
 			return nil, err
 		}
 
 		ts.Schema = sf
 
-		df, err := LoadDataFile(o.DataPath)
+		df, err := LoadDataCommands(o.DataPath)
 		if err != nil {
 			return nil, err
 		}
