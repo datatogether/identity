@@ -1,0 +1,122 @@
+---
+  swagger: "2.0"
+  info: 
+    version: "0.0.1"
+    title: "Archivers API"
+    description: "Api for Archivers records"
+    termsOfService: "https://archivers.space/terms/api"
+    contact: 
+      name: "b5"
+    license: 
+      name: "MIT"
+  host: "api.archivers.space"
+  basePath: ""
+  schemes: 
+    - "https"
+  consumes: 
+    - "application/json"
+  produces: 
+    - "application/json"
+  paths: 
+    /primers:
+      get:
+        description: "List Primers"
+        produces:
+          - "application/json"
+        responses:
+          "200":
+            description: "Enveloped array of Primers"
+            schema:
+              type: object
+              properties:
+                meta:
+                  type: object
+                data:
+                  type: array
+                  $ref: "#/description/Primer"
+                pagination:
+                  type: object
+    /primers/{id}:
+      get:
+        description: "Get a Primer"
+        produces:
+          - "application/json"
+        responses:
+          "200":
+            description: "List"
+            schema:
+              type: object
+              properties:
+                meta:
+                  type: object
+                data:
+                  type: object
+                  $ref: "#/description/Primer"
+    /sources:
+      get:
+        description: "List Sources"
+        produces:
+          - "application/json"
+        responses:
+          "200":
+            description: "Enveloped Sources"
+            schema:
+              type: object
+              properties:
+                meta:
+                  type: object
+                data:
+                  type: object
+                pagination:
+                  type: object
+    /sources/{id}:
+      get:
+        description: "Get a Source"
+        produces:
+          - "application/json"
+        responses:
+          "200":
+            description: "Enveloped Source"
+            schema:
+              type: object
+              properties:
+                meta:
+                  type: object
+                data:
+                  type: object
+                  $ref: "#/definitions/Source"
+  definitions:
+    User:
+      type: "object"
+      required:
+        - "id"
+      properties:
+        id:
+          type: "string"
+          format: "uuidv4"
+        created:
+          type: string
+          format: date-time
+          description: timestamp of first addition to the database rounded to seconds in UTC.
+        updated:
+          type: string
+          format: date-time
+          description: timestamp of most recent change rounded to seconds in UTC
+        username:
+          type: string
+          description: handle for the user. min 1 character, max 80. composed of [_,-,a-z,A-Z,1-9]
+        type:
+          type: string
+          description: specifies weather this is a user or an organization
+        name:
+          type: string
+          description: user name field. could be first[space]last, but not strictly enforced
+        description:
+          type: string
+          description: user-filled description of self
+        homeUrl:
+          type: string
+          description: url this user wants the world to click
+        currentKey:
+          type: string
+          description: sh256 multihash of public key that this user is currently using for signatures

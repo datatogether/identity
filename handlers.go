@@ -10,7 +10,14 @@ import (
 // health reporting
 func HealthCheckHandler(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusOK)
-	w.Write([]byte(`{ "status" : 200 }`))
+	io.WriteString(w, `{ "status" : 200 }`)
+}
+
+// Respond with this server's public key
+func PublicKeyHandler(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/x-pem-file")
+	w.WriteHeader(http.StatusOK)
+	io.WriteString(w, cfg.PublicKey)
 }
 
 // CORSHandler is an empty 200 response for OPTIONS requests that responds with

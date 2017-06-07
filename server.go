@@ -76,15 +76,17 @@ func main() {
 func NewServerRoutes() *http.ServeMux {
 	m := http.NewServeMux()
 
-	m.HandleFunc("/.well-known/acme-challenge/", CertbotHandler)
 	m.Handle("/", middleware(NotFoundHandler))
+
+	m.Handle("/publickey", middleware(PublicKeyHandler))
+
 	m.Handle("/session", middleware(SessionHandler))
-	m.Handle("/logout", middleware(LogoutHandler))
 	m.Handle("/session/keys", middleware(KeysHandler))
 	m.Handle("/session/oauth", middleware(SessionUserTokensHandler))
 	m.Handle("/session/oauth/github/repoaccess", middleware(GithubRepoAccessHandler))
-	m.Handle("/jwt/publickey", middleware(JwtPublicKeyHandler))
-	m.Handle("/jwt/session", middleware(JwtHandler))
+
+	m.Handle("/jwt", middleware(JwtHandler))
+	m.Handle("/logout", middleware(LogoutHandler))
 
 	// m.Handle("/session/groups", handler)
 	m.Handle("/search", middleware(UsersSearchHandler))
@@ -99,6 +101,8 @@ func NewServerRoutes() *http.ServeMux {
 
 	// m.Handle("/reset", middleware(ResetPasswordHandler))
 	// m.Handle("/reset/", middleware(ResetPasswordHandler))
+
+	m.HandleFunc("/.well-known/acme-challenge/", CertbotHandler)
 
 	return m
 }

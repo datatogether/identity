@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/archivers-space/identity/jwt"
 	"github.com/archivers-space/identity/user"
+	"io"
 	"net/http"
 )
 
@@ -12,21 +13,11 @@ func JwtHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "OPTIONS":
 		CORSHandler(w, r)
-	// case "GET":
-	// 	GetJwtHandler(w, r)
-	// case "PUT":
-	// SaveUserHandler(w, r)
 	case "POST":
 		JwtTokenHandler(w, r)
-	// case "DELETE":
-	// LogoutHandler(w, r)
 	default:
 		ErrRes(w, ErrNotFound)
 	}
-}
-
-func JwtPublicKeyHandler(w http.ResponseWriter, r *http.Request) {
-	fmt.Fprint(w, cfg.PublicKey)
 }
 
 // reads the form values, checks them and creates the token
@@ -43,8 +34,8 @@ func JwtTokenHandler(w http.ResponseWriter, r *http.Request) {
 		}
 	} else {
 		// default to using form values
-		login.Username = r.FormValue("username")
-		login.Password = r.FormValue("password")
+		login.Username = r.Header.Get("username")
+		login.Password = r.Header.Get("password")
 	}
 
 	u, err := user.AuthenticateUser(appDB, login.Username, login.Password)
@@ -63,5 +54,5 @@ func JwtTokenHandler(w http.ResponseWriter, r *http.Request) {
 
 	w.Header().Set("Content-Type", "application/jwt")
 	w.WriteHeader(http.StatusOK)
-	fmt.Fprintln(w, tokenString)
+	io.WriteString(w, tokenString)
 }
