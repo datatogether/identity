@@ -89,12 +89,13 @@ func NewServerRoutes() *http.ServeMux {
 	m.Handle("/logout", middleware(LogoutHandler))
 
 	// m.Handle("/session/groups", handler)
-	m.Handle("/search", middleware(UsersSearchHandler))
 	m.Handle("/users", middleware(UsersHandler))
 	m.Handle("/users/", middleware(UserHandler))
+	m.Handle("/users/search", middleware(UsersSearchHandler))
 
-	m.Handle("/groups", middleware(GroupsHandler))
-	m.Handle("/groups/", middleware(GroupHandler))
+	// TODO - finish groups implementation
+	// m.Handle("/groups", middleware(GroupsHandler))
+	// m.Handle("/groups/", middleware(GroupHandler))
 
 	m.Handle("/oauth/github", middleware(GithubOauthHandler))
 	m.Handle("/oauth/github/callback", middleware(GithubOAuthCallbackHandler))
