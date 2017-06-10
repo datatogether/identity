@@ -117,6 +117,11 @@ func initConfig(mode string) (cfg *config, err error) {
 		"PRIVATE_KEY":     cfg.PrivateKey,
 	})
 
+	// output to stdout in dev mode
+	if mode == DEVELOP_MODE {
+		log.Out = os.Stdout
+	}
+
 	return
 }
 
