@@ -4,8 +4,8 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"github.com/archivers-space/identity/oauth"
-	"github.com/archivers-space/identity/user"
+	"github.com/datatogether/identity/oauth"
+	"github.com/datatogether/identity/user"
 	"golang.org/x/oauth2"
 	"net/http"
 )

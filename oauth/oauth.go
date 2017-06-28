@@ -1,7 +1,7 @@
 package oauth
 
 import (
-	"github.com/archivers-space/identity/user"
+	"github.com/datatogether/identity/user"
 	"golang.org/x/oauth2"
 )
 

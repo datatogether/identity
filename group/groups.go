@@ -2,7 +2,7 @@ package group
 
 import (
 	"database/sql"
-	"github.com/archivers-space/sqlutil"
+	"github.com/datatogether/sqlutil"
 )
 
 func ListGroups(db sqlutil.Queryable, limit, offset int) ([]*Group, error) {

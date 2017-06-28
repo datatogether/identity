@@ -1,8 +1,8 @@
 package user
 
 import (
-	"github.com/archivers-space/errors"
-	"github.com/archivers-space/sqlutil"
+	"github.com/datatogether/errors"
+	"github.com/datatogether/sqlutil"
 	"strings"
 )
 

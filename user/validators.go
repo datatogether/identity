@@ -2,8 +2,8 @@ package user
 
 import (
 	"database/sql"
-	"github.com/archivers-space/errors"
-	"github.com/archivers-space/sqlutil"
+	"github.com/datatogether/errors"
+	"github.com/datatogether/sqlutil"
 	"net/url"
 	"regexp"
 	"strings"

@@ -3,7 +3,7 @@ package jwt
 import (
 	"crypto/rsa"
 	"database/sql"
-	"github.com/archivers-space/identity/user"
+	"github.com/datatogether/identity/user"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/dgrijalva/jwt-go/request"
 	"net/http"

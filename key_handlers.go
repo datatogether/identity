@@ -1,7 +1,7 @@
 package main
 
 import (
-	"github.com/archivers-space/identity/user"
+	"github.com/datatogether/identity/user"
 
 	// "encoding/hex"
 	"encoding/json"

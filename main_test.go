@@ -4,7 +4,7 @@ import (
 	"database/sql"
 	"flag"
 	"fmt"
-	"github.com/archivers-space/sqlutil"
+	"github.com/datatogether/sqlutil"
 	"github.com/gchaincl/dotsql"
 	_ "github.com/lib/pq"
 	"os"

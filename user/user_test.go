@@ -3,7 +3,7 @@ package user
 import (
 	// "encoding/json"
 	"fmt"
-	// "github.com/archivers-space/errors"
+	// "github.com/datatogether/errors"
 	"testing"
 )
 

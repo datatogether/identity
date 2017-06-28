@@ -1,7 +1,7 @@
 package access_token
 
 import (
-	"github.com/archivers-space/sqlutil"
+	"github.com/datatogether/sqlutil"
 	"math/rand"
 	"time"
 )

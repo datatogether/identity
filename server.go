@@ -3,9 +3,9 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"github.com/archivers-space/identity/jwt"
-	"github.com/archivers-space/identity/oauth"
-	"github.com/archivers-space/sqlutil"
+	"github.com/datatogether/identity/jwt"
+	"github.com/datatogether/identity/oauth"
+	"github.com/datatogether/sqlutil"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 	"net/http"

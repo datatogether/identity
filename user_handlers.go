@@ -2,7 +2,7 @@ package main
 
 import (
 	"encoding/json"
-	"github.com/archivers-space/identity/user"
+	"github.com/datatogether/identity/user"
 	"net/http"
 )
 

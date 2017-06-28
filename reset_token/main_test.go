@@ -3,7 +3,7 @@ package reset_token
 import (
 	"database/sql"
 	"fmt"
-	"github.com/archivers-space/sqlutil"
+	"github.com/datatogether/sqlutil"
 	_ "github.com/lib/pq"
 	"os"
 	"testing"

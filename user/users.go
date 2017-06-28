@@ -3,8 +3,8 @@ package user
 import (
 	"database/sql"
 	"fmt"
-	"github.com/archivers-space/errors"
-	"github.com/archivers-space/sqlutil"
+	"github.com/datatogether/errors"
+	"github.com/datatogether/sqlutil"
 )
 
 // grab all users

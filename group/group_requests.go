@@ -1,9 +1,9 @@
 package group
 
 import (
-	"github.com/archivers-space/errors"
-	"github.com/archivers-space/identity/user"
-	"github.com/archivers-space/sqlutil"
+	"github.com/datatogether/errors"
+	"github.com/datatogether/identity/user"
+	"github.com/datatogether/sqlutil"
 )
 
 // Groups holds all types of requests for groups

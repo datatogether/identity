@@ -3,8 +3,8 @@ package main
 import (
 	"encoding/json"
 	"fmt"
-	"github.com/archivers-space/identity/jwt"
-	"github.com/archivers-space/identity/user"
+	"github.com/datatogether/identity/jwt"
+	"github.com/datatogether/identity/user"
 	"io"
 	"net/http"
 )

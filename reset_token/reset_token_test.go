@@ -2,7 +2,7 @@ package reset_token
 
 import (
 	"fmt"
-	"github.com/archivers-space/errors"
+	"github.com/datatogether/errors"
 
 	"testing"
 	"time"

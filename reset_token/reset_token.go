@@ -3,9 +3,9 @@ package reset_token
 import (
 	"database/sql"
 	"fmt"
-	"github.com/archivers-space/errors"
-	"github.com/archivers-space/identity/user"
-	"github.com/archivers-space/sqlutil"
+	"github.com/datatogether/errors"
+	"github.com/datatogether/identity/user"
+	"github.com/datatogether/sqlutil"
 	"github.com/pborman/uuid"
 	"strings"
 	"time"

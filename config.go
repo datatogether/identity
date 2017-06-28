@@ -2,7 +2,7 @@ package main
 
 import (
 	"fmt"
-	conf "github.com/archivers-space/config"
+	conf "github.com/datatogether/config"
 	"os"
 	"path/filepath"
 )
@@ -126,7 +126,7 @@ func initConfig(mode string) (cfg *config, err error) {
 }
 
 func packagePath(path string) string {
-	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/archivers-space/identity", path)
+	return filepath.Join(os.Getenv("GOPATH"), "src/github.com/datatogether/identity", path)
 }
 
 // requireConfigStrings panics if any of the passed in values aren't set
