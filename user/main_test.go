@@ -1,44 +1,44 @@
 package user
 
 import (
-	"database/sql"
-	"fmt"
-	"github.com/datatogether/sqlutil"
-	_ "github.com/lib/pq"
-	"os"
-	"testing"
+// "database/sql"
+// "fmt"
+// "github.com/datatogether/sqlutil"
+// _ "github.com/lib/pq"
+// "os"
+// "testing"
 )
 
 var testDB *sql.DB
 
-func TestMain(m *testing.M) {
-	var err error
-	if os.Getenv("POSTGRES_DB_URL") == "" {
-		fmt.Printf("POSTGRES_DB_URL env var must be defined\n")
-		os.Exit(1)
-	}
+// func TestMain(m *testing.M) {
+// 	var err error
+// 	if os.Getenv("POSTGRES_DB_URL") == "" {
+// 		fmt.Printf("POSTGRES_DB_URL env var must be defined\n")
+// 		os.Exit(1)
+// 	}
 
-	ts, err := sqlutil.InitTestSuite(&sqlutil.TestSuiteOpts{
-		DriverName:      "postgres",
-		ConnString:      os.Getenv("POSTGRES_DB_URL"),
-		SchemaSqlString: schema,
-		DataSqlString:   testData,
-		Cascade: []string{
-			"users",
-			"oauth_tokens",
-			"keys",
-			"reset_tokens",
-		},
-	})
-	if err != nil {
-		fmt.Printf("error initializing test suite: %s\n", err.Error())
-		os.Exit(1)
-	}
-	testDB = ts.DB
+// 	ts, err := sqlutil.InitTestSuite(&sqlutil.TestSuiteOpts{
+// 		DriverName:      "postgres",
+// 		ConnString:      os.Getenv("POSTGRES_DB_URL"),
+// 		SchemaSqlString: schema,
+// 		DataSqlString:   testData,
+// 		Cascade: []string{
+// 			"users",
+// 			"oauth_tokens",
+// 			"keys",
+// 			"reset_tokens",
+// 		},
+// 	})
+// 	if err != nil {
+// 		fmt.Printf("error initializing test suite: %s\n", err.Error())
+// 		os.Exit(1)
+// 	}
+// 	testDB = ts.DB
 
-	retCode := m.Run()
-	os.Exit(retCode)
-}
+// 	retCode := m.Run()
+// 	os.Exit(retCode)
+// }
 
 const schema = `
 -- name: drop-all

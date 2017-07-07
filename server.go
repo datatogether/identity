@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"github.com/datatogether/identity/jwt"
 	"github.com/datatogether/identity/oauth"
+	"github.com/datatogether/sql_datastore"
 	"github.com/datatogether/sqlutil"
 	_ "github.com/lib/pq"
 	"github.com/sirupsen/logrus"
@@ -24,6 +25,9 @@ var (
 
 	// application database connection
 	appDB = &sql.DB{}
+
+	// hoist default store
+	store = sql_datastore.DefaultStore
 
 	// cookie session storage
 	sessionStore *sessions.CookieStore

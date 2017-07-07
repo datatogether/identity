@@ -10,7 +10,7 @@ import (
 // grab all users
 func ReadUsers(db sqlutil.Queryable, limit, offset int) (users []*User, err error) {
 	users = make([]*User, 0)
-	rows, e := db.Query(fmt.Sprintf("SELECT %s FROM users WHERE deleted=false ORDER BY created DESC LIMIT $1 OFFSET $2", userColumns()), limit, offset)
+	rows, e := db.Query(qUsers, limit, offset)
 	if e != nil {
 		if e == sql.ErrNoRows {
 			return []*User{}, nil

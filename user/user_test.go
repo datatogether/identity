@@ -4,40 +4,20 @@ import (
 	"encoding/json"
 	"fmt"
 	"github.com/datatogether/errors"
+	"github.com/ipfs/go-datastore"
 	"testing"
 )
 
-var egUserOne = &User{Name: "Brendan O'Brien (test user)", Id: "3fe7d2cc-a8dc-4da0-ac37-c3061d067ae7", Username: "brendan", accessToken: "1234567890ABCDE", Type: UserTypeUser, Email: "test_user_brendan@qri.io"}
-
-func CompareUsers(a, b *User, strict bool) error {
-	if a == nil {
-		return fmt.Errorf("a is nil")
-	} else if b == nil {
-		return fmt.Errorf("b is nil")
+var (
+	egUserOne = &User{
+		Id:          "3fe7d2cc-a8dc-4da0-ac37-c3061d067ae7",
+		Type:        UserTypeUser,
+		Username:    "brendan",
+		Name:        "Brendan O'Brien (test user)",
+		Email:       "test_user_brendan@qri.io",
+		accessToken: "1234567890ABCDE",
 	}
-
-	if strict {
-		if a.Id != b.Id {
-			return fmt.Errorf("ids don't match")
-		}
-		if a.Created != b.Created {
-			return fmt.Errorf("created doesn't match")
-		}
-		if a.Updated != b.Updated {
-			return fmt.Errorf("updated doesn't match")
-		}
-	}
-	if a.Username != b.Username {
-		return fmt.Errorf("Username mismatch")
-	}
-	if a.Email != b.Email {
-		return fmt.Errorf("Email mismatch")
-	}
-	if a.Name != b.Name {
-		return fmt.Errorf("Name mismatch: %s != %s", a.Name, b.Name)
-	}
-	return nil
-}
+)
 
 func TestNewUser(t *testing.T) {
 	if NewUser("one").Id != "one" {
@@ -117,6 +97,12 @@ func TestUserUnmarshalJSON(t *testing.T) {
 }
 
 func TestUserRead(t *testing.T) {
+	store := datastore.NewMapDatastore()
+	if err := egUserOne.Save(store); err != nil {
+		t.Errorf("error adding user to memstore: %s", err.Error())
+		return
+	}
+
 	cases := []struct {
 		in, out *User
 		expect  error
@@ -142,6 +128,8 @@ func TestUserRead(t *testing.T) {
 }
 
 func TestUserSave(t *testing.T) {
+	store := datastore.NewMapDatastore()
+
 	cases := []struct {
 		u      *User
 		expect error
@@ -171,13 +159,15 @@ func TestUserSave(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		if got := c.u.Save(testDB); got != c.expect {
+		if got := c.u.Save(store); got != c.expect {
 			t.Errorf("case %d unexpected error. expected: %s, got: %s", i, c.expect, got)
 		}
 	}
 }
 
 func TestUserSavePassword(t *testing.T) {
+	store := datastore.NewMapDatastore()
+
 	cases := []struct {
 		u      *User
 		pass   string
@@ -190,19 +180,17 @@ func TestUserSavePassword(t *testing.T) {
 
 	for i, c := range cases {
 		c.u.password = c.pass
-		if got := c.u.SavePassword(testDB, c.pass); got != c.expect {
+		if got := c.u.SavePassword(store, c.pass); got != c.expect {
 			t.Errorf("case %d unexpected error. expected: %s, got: %s", i, c.expect, got)
 		}
 	}
 
-	// resetTestData(testDB, TypeUser)
 }
 
 func TestUserDelete(t *testing.T) {
-	// TODO - make tests independent
-	// read test_user from save test
+	store := datastore.NewMapDatastore()
 	testUser := &User{Username: "test_user", Email: "test@qri.io", password: "password"}
-	if err := testUser.Read(testDB); err != nil {
+	if err := testUser.Save(store); err != nil {
 		t.Error("couldn't save test_user")
 		return
 	}
@@ -216,21 +204,20 @@ func TestUserDelete(t *testing.T) {
 	}
 
 	for i, c := range cases {
-		if got := c.u.Delete(testDB); got != c.expect {
+		if got := c.u.Delete(store); got != c.expect {
 			t.Errorf("case %d error mismatch. expected: %s, got: %s", c.expect, got)
 		}
 
 		// try to read, should return not found
-		if err := c.u.Read(testDB); err != errors.ErrNotFound {
+		if err := c.u.Read(store); err != errors.ErrNotFound {
 			t.Errorf("case %d didn't return not found on read after delete", i)
 		}
 	}
 }
 
 func TestCreateUser(t *testing.T) {
-	if testing.Short() {
-		t.Skip("Skipping CreateUser In Short Mode")
-	}
+	store := datastore.NewMapDatastore()
+
 	cases := []struct {
 		username, email, name, password string
 		t                               UserType
@@ -242,7 +229,7 @@ func TestCreateUser(t *testing.T) {
 
 	for i, c := range cases {
 		// username, email, name, password string, t UserType
-		if user, got := CreateUser(testDB, c.username, c.email, c.name, c.password, c.t); got != c.expect {
+		if user, got := CreateUser(store, c.username, c.email, c.name, c.password, c.t); got != c.expect {
 			t.Errorf("cases %i error mismatch. expected: %s, got: %s", i, c.expect, got)
 		} else if c.u != nil {
 			if err := CompareUsers(c.u, user, false); err != nil {
@@ -272,4 +259,34 @@ func TestAuthenticateUser(t *testing.T) {
 			}
 		}
 	}
+}
+
+func CompareUsers(a, b *User, strict bool) error {
+	if a == nil {
+		return fmt.Errorf("a is nil")
+	} else if b == nil {
+		return fmt.Errorf("b is nil")
+	}
+
+	if strict {
+		if a.Id != b.Id {
+			return fmt.Errorf("ids don't match")
+		}
+		if a.Created != b.Created {
+			return fmt.Errorf("created doesn't match")
+		}
+		if a.Updated != b.Updated {
+			return fmt.Errorf("updated doesn't match")
+		}
+	}
+	if a.Username != b.Username {
+		return fmt.Errorf("Username mismatch")
+	}
+	if a.Email != b.Email {
+		return fmt.Errorf("Email mismatch")
+	}
+	if a.Name != b.Name {
+		return fmt.Errorf("Name mismatch: %s != %s", a.Name, b.Name)
+	}
+	return nil
 }

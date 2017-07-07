@@ -44,7 +44,7 @@ func keyString(pubKey ssh.PublicKey) string {
 
 // UserForPublicKey finds a user based on a provided public key
 func UserForPublicKey(db sqlutil.Queryable, pubKey ssh.PublicKey) (*User, error) {
-	row := db.QueryRow(fmt.Sprintf("select %s from users where id = (select id from keys where sha_256= $1 and deleted = false)", userColumns()), sha256.Sum256(pubKey.Marshal()))
+	row := db.QueryRow(qUserReadByPublicKey, sha256.Sum256(pubKey.Marshal()))
 	u := &User{}
 	err := u.UnmarshalSQL(row)
 	return u, err

@@ -6,7 +6,9 @@ import (
 	"fmt"
 	"github.com/datatogether/errors"
 	"github.com/datatogether/identity/access_token"
+	"github.com/datatogether/sql_datastore"
 	"github.com/datatogether/sqlutil"
+	"github.com/ipfs/go-datastore"
 	"github.com/pborman/uuid"
 	"strings"
 	"time"
@@ -50,11 +52,29 @@ type User struct {
 	Anonymous bool `json:"_"`
 }
 
+// DatastoreType is to fulfill the sql_datastore.Model interface
+// It distinguishes "Task" as a storable type. "Task" is not (yet) intended for
+// use outside of Datatogether servers.
+func (u User) DatastoreType() string {
+	return "User"
+}
+
+// GetId returns a task's cannoncial identifier
+func (u User) GetId() string {
+	return u.Id
+}
+
+// Key is to fulfill the sql_datastore.Model interface
+func (u User) Key() datastore.Key {
+	return datastore.NewKey(fmt.Sprintf("%s:%s", u.DatastoreType(), u.GetId()))
+}
+
 // create a new user struct pointer from a provided id string
 func NewUser(id string) *User {
 	return &User{Id: id, Type: UserTypeUser}
 }
 
+// NewAccessTokenUser creates a new user from an access token
 func NewAccessTokenUser(token string) *User {
 	return &User{accessToken: token, Type: UserTypeUser}
 }
@@ -72,15 +92,11 @@ func NewUserFromString(s string) *User {
 	return &User{}
 }
 
-func userColumns() string {
-	return "id, created, updated, username, type, name, description, home_url, email, current_key, email_confirmed, is_admin"
-}
-
 // _user is a private struct for marshaling & unmarshaling
 type _user User
 
 // MarshalJSON is a custom JSON implementation that delivers a uuid-string if the
-// model is blank, or an object otherwise
+// model is blank, or an object if the model is not blank
 func (u User) MarshalJSON() ([]byte, error) {
 	// if we only have the Id of the user, but not created & updated
 	// values, there's a very good chance this value hasn't been properly
@@ -113,50 +129,53 @@ func (u *User) UnmarshalJSON(data []byte) error {
 	return nil
 }
 
-// just the username
-func (u *User) Slug() string {
-	return u.Username
-}
-
-// return url endpoint path to user. basically: /:username
-func (u *User) Path() string {
-	return fmt.Sprintf("/%s", u.Username)
-}
-
 // load the given user from the database based on
 // id, username, or email
-func (u *User) Read(db sqlutil.Queryable) error {
-	var clause, value string
+func (u *User) Read(store datastore.Datastore) error {
+	var q, value string
 
-	if u.Id != "" {
-		clause = "id"
-		value = u.Id
-	} else if u.Username != "" {
-		clause = "username"
-		value = u.Username
-	} else if u.Email != "" {
-		clause = "email"
-		value = u.Email
-	} else if u.accessToken != "" {
-		clause = "access_token"
-		value = u.accessToken
-	} else {
-		return errors.ErrNotFound
-	}
-
-	row := db.QueryRow(fmt.Sprintf("SELECT %s FROM users WHERE %s= $1 AND deleted=false", userColumns(), clause), value)
-	user := &User{}
-	err := user.UnmarshalSQL(row)
-	if err != nil {
-		if err == sql.ErrNoRows {
-			return errors.ErrNotFound
+	if sqls, ok := store.(sql_datastore.Datastore); ok {
+		if u.Id != "" {
+			q = qUserReadById
+			value = u.Id
+		} else if u.Username != "" {
+			q = qUserReadByUsername
+			value = u.Username
+		} else if u.Email != "" {
+			q = qUserReadByEmail
+			value = u.Email
+		} else if u.accessToken != "" {
+			q = qUserReadByAccessToken
+			value = u.accessToken
 		} else {
-			return errors.New500Error(err.Error())
+			return datastore.ErrNotFound
 		}
+
+		row := sqls.DB.QueryRow(q, value)
+		user := &User{}
+		err := user.UnmarshalSQL(row)
+		if err != nil {
+			if err == sql.ErrNoRows {
+				return datastore.ErrNotFound
+			} else {
+				return errors.New500Error(err.Error())
+			}
+		}
+		*u = *user
+		return nil
 	}
 
-	*u = *user
-	return nil
+	ui, err := store.Get(u.Key())
+	if err != nil {
+		return err
+	}
+
+	if user, ok := ui.(*User); ok {
+		*u = *user
+		return nil
+	}
+
+	return fmt.Errorf("invalid response")
 }
 
 func (u *User) ReadApiToken(db sqlutil.Queryable) error {
@@ -186,49 +205,52 @@ func (u *User) SetCurrentKey(db sqlutil.Execable, key [32]byte) error {
 
 // save a user model, creating it if it doesn't exist
 // updating the user model if it doesn't
-func (u *User) Save(db sqlutil.Transactable) error {
+func (u *User) Save(store datastore.Datastore) (err error) {
+
 	prev := NewUser(u.Id)
-	if err := prev.Read(db); err != nil {
-		// create if user doesn't exist
-		if err == errors.ErrNotFound {
-			if err = u.validateCreate(db); err != nil {
-				return err
-			}
+	if u.Id != "" {
+		err = prev.Read(store)
+		if err != nil && err != datastore.ErrNotFound {
+			return err
+		}
+	}
 
-			hash, e := bcrypt.GenerateFromPassword([]byte(u.password), bcrypt.DefaultCost)
-			if e != nil {
-				return errors.Error500IfErr(e)
-			}
-
-			u.Id = uuid.New()
-			u.Created = time.Now().Unix()
-			u.Updated = u.Created
-
-			// create access token
-			token, e := access_token.Create(db)
-			if e != nil {
-				return errors.Error500IfErr(e)
-			}
-			u.accessToken = token
-
-			if _, e = db.Exec(qUserInsert, u.Id, u.Created, u.Updated, u.Username, u.Type, hash, u.Email, u.Name, u.Description, u.HomeUrl, u.emailConfirmed, u.accessToken); e != nil {
-				return errors.NewFmtError(500, e.Error())
-			}
-
-			// create default keypair using newly-minted user
-			key, err := NewKey("default key", u)
-			if err != nil {
-				return err
-			}
-
-			if err = key.Save(db); err != nil {
-				return err
-			}
-
-			return u.SetCurrentKey(db, key.Sha256)
+	if prev != nil {
+		if err = u.validateCreate(store); err != nil {
+			return err
 		}
 
-		return err
+		hash, e := bcrypt.GenerateFromPassword([]byte(u.password), bcrypt.DefaultCost)
+		if e != nil {
+			return errors.Error500IfErr(e)
+		}
+
+		u.Id = uuid.New()
+		u.Created = time.Now().Unix()
+		u.Updated = u.Created
+
+		// create access token
+		token, e := access_token.Create(db)
+		if e != nil {
+			return errors.Error500IfErr(e)
+		}
+		u.accessToken = token
+
+		if _, e = db.Exec(qUserInsert, u.Id, u.Created, u.Updated, u.Username, u.Type, hash, u.Email, u.Name, u.Description, u.HomeUrl, u.emailConfirmed, u.accessToken); e != nil {
+			return errors.NewFmtError(500, e.Error())
+		}
+
+		// create default keypair using newly-minted user
+		key, err := NewKey("default key", u)
+		if err != nil {
+			return err
+		}
+
+		if err = key.Save(db); err != nil {
+			return err
+		}
+
+		return u.SetCurrentKey(db, key.Sha256)
 	} else {
 		// update the user
 		if err := u.validateUpdate(db, prev); err != nil {
@@ -274,9 +296,7 @@ func (u *User) Save(db sqlutil.Transactable) error {
 }
 
 // "delete" a user
-// TODO - deleting an account will require lots of cleanup:
-//	* Close any open change requests
-//	* Resolve any datasets that the user is the sole administrator of
+// TODO - deleting an account will require lots of cleanup. So, uh, do that.
 func (u *User) Delete(db sqlutil.Transactable) error {
 	if err := u.Read(db); err != nil {
 		return err
@@ -287,7 +307,7 @@ func (u *User) Delete(db sqlutil.Transactable) error {
 	}
 
 	u.Updated = time.Now().Unix()
-	if _, err := tx.Exec("UPDATE users SET updated= $2, deleted=true WHERE id= $1", u.Id, u.Updated); err != nil {
+	if _, err := tx.Exec(qUserDelete, u.Id, u.Updated); err != nil {
 		tx.Rollback()
 		return errors.Error500IfErr(err)
 	}
@@ -401,7 +421,7 @@ func (u *User) validateUpdate(db sqlutil.Queryable, prev *User) error {
 // create a new user from a given username, email, first, last, and password
 // This is just a wrapper to turn args into a user & then call save, returning the user & error,
 // But should be used to create users in case we want to inject analytics or whatever.
-func CreateUser(db sqlutil.Transactable, username, email, name, password string, t UserType) (u *User, err error) {
+func CreateUser(store datastore.Datastore, username, email, name, password string, t UserType) (u *User, err error) {
 	u = &User{
 		Username:       username,
 		Email:          email,
@@ -411,7 +431,7 @@ func CreateUser(db sqlutil.Transactable, username, email, name, password string,
 		emailConfirmed: false,
 	}
 
-	err = u.Save(db)
+	err = u.Save(store)
 	if err != nil {
 		return nil, err
 	}
@@ -473,6 +493,31 @@ func (u *User) SavePassword(db sqlutil.Execable, password string) error {
 // 	return fmt.Sprintf("%s/email/%s/confirm", cfg.UrlRoot, u.Id)
 // }
 
+func (u *User) NewSQLModel(id string) sql_datastore.Model {
+	return &User{Id: id}
+}
+
+func (t *User) SQLQuery(cmd sql_datastore.Cmd) string {
+	switch cmd {
+	case sql_datastore.CmdCreateTable:
+		return qUserCreateTable
+	case sql_datastore.CmdExistsOne:
+		return qUserExists
+	case sql_datastore.CmdSelectOne:
+		return qUserReadById
+	case sql_datastore.CmdInsertOne:
+		return qUserInsert
+	case sql_datastore.CmdUpdateOne:
+		return qUserUpdate
+	case sql_datastore.CmdDeleteOne:
+		return qUserDelete
+	case sql_datastore.CmdList:
+		return qUsers
+	default:
+		return ""
+	}
+}
+
 // turn an sql row from the user table into a user struct pointer
 func (u *User) UnmarshalSQL(row sqlutil.Scannable) error {
 	var (
@@ -501,6 +546,31 @@ func (u *User) UnmarshalSQL(row sqlutil.Scannable) error {
 	}
 
 	return nil
+}
+
+func (u *User) SQLParams(cmd sql_datastore.Cmd) []interface{} {
+	switch cmd {
+	case sql_datastore.CmdSelectOne, sql_datastore.CmdExistsOne, sql_datastore.CmdDeleteOne:
+		return []interface{}{u.Id}
+	case sql_datastore.CmdList:
+		return []interface{}{}
+	default:
+		return []interface{}{
+			u.Id,
+			u.Created,
+			u.Updated,
+			u.Username,
+			u.Type,
+			// TODO - password hash
+			// u.pass,
+			u.Email,
+			u.Name,
+			u.Description,
+			u.HomeUrl,
+			u.emailConfirmed,
+			u.accessToken,
+		}
+	}
 }
 
 // func (u *User) AcceptGroupInvite(db *sql.DB, g *Group) error {
