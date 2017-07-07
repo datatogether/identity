@@ -7,8 +7,6 @@ import (
 )
 
 // Requests holds all types of requests for users
-// it's based on an int b/c it's stateless and Go lets us
-// do this sort of thing
 type UserRequests struct {
 	Store sqlutil.Transactable
 }

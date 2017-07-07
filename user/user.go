@@ -211,7 +211,7 @@ func (u *User) Save(db sqlutil.Transactable) error {
 			}
 			u.accessToken = token
 
-			if _, e = db.Exec("INSERT INTO users VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, false, $12, false)", u.Id, u.Created, u.Updated, u.Username, u.Type, hash, u.Email, u.Name, u.Description, u.HomeUrl, u.emailConfirmed, u.accessToken); e != nil {
+			if _, e = db.Exec(qUserInsert, u.Id, u.Created, u.Updated, u.Username, u.Type, hash, u.Email, u.Name, u.Description, u.HomeUrl, u.emailConfirmed, u.accessToken); e != nil {
 				return errors.NewFmtError(500, e.Error())
 			}
 
