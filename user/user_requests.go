@@ -16,13 +16,14 @@ type UserRequests struct {
 type UsersListParams struct {
 	// the user performing the request
 	User *User `required:"true"`
+	Type UserType
 	// users requests embeds pagination info
 	Limit  int
 	Offset int
 }
 
 func (r UserRequests) List(p *UsersListParams, res *[]*User) error {
-	users, err := ReadUsers(r.Store, p.Limit, p.Offset)
+	users, err := ReadUsers(r.Store, p.Type, p.Limit, p.Offset)
 	if err != nil {
 		return err
 	}
@@ -101,3 +102,75 @@ func (r UserRequests) Search(p *UsersSearchParams, res *[]*User) error {
 	*res = users
 	return nil
 }
+
+type UsersCommunityMembersParams struct {
+	User      *User
+	Community *User
+	Order     string
+	Limit     int
+	Offset    int
+}
+
+func (r UserRequests) CommunityMembers(p *UsersCommunityMembersParams, res *[]*User) error {
+	// override order for now
+	p.Order = "community_users.joined DESC"
+
+	users, err := CommunityUsers(r.Store, p.Community, p.Order, p.Limit, p.Offset)
+	if err != nil {
+		return err
+	}
+
+	*res = users
+	return nil
+}
+
+type UsersCommunitiesParams struct {
+	User   *User
+	Order  string
+	Limit  int
+	Offset int
+}
+
+func (r UserRequests) UserCommunities(p *UsersCommunityMembersParams, res *[]*User) error {
+	// override order for now
+	p.Order = "users.created DESC"
+
+	users, err := UserCommunities(r.Store, p.User, p.Order, p.Limit, p.Offset)
+	if err != nil {
+		return err
+	}
+
+	*res = users
+	return nil
+}
+
+// type UsersCreateCommunityParams struct {
+// 	User *User
+// 	Name string
+// }
+
+// func (r UserRequests) CreateCommunity(p *UsersCreateCommunityParams, res *User) error {
+// 	return nil
+// }
+
+// type UsersDeleteCommunityParams struct {
+// }
+
+// func (r UserRequests) DeleteCommunity(p *UsersDeleteCommunityParams, res *User) error {
+// 	return nil
+// }
+
+// type UsersCreateCommunityInviteParams struct {
+// 	User *User
+// }
+
+// func (r UserRequests) CreateCommunityInvite(p *UsersCreateCommunityParams, res *User) error {
+// 	return nil
+// }
+
+// type UsersRemoveCommunityUserParams struct {
+// }
+
+// func (r UserRequests) UsersRemoveCommunityUser(p *UsersRemoveCommunityUserParams, res *bool) error {
+// 	return nil
+// }

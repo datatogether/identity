@@ -62,6 +62,7 @@ func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 		page := PageFromRequest(r)
 		p := &user.UsersListParams{
 			User:   sessionUser(r),
+			Type:   reqUserType(r),
 			Limit:  page.Size,
 			Offset: page.Offset(),
 		}
@@ -74,6 +75,17 @@ func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ExecRequest(w, envelope, req)
+}
+
+func reqUserType(r *http.Request) user.UserType {
+	switch r.FormValue("type") {
+	case "community":
+		return user.UserTypeCommunity
+	case "user":
+		return user.UserTypeUser
+	default:
+		return user.UserTypeNone
+	}
 }
 
 // Create a user from the api, feed password in as a query param

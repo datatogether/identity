@@ -7,10 +7,18 @@ import (
 	"github.com/datatogether/sqlutil"
 )
 
-// grab all users
-func ReadUsers(db sqlutil.Queryable, limit, offset int) (users []*User, err error) {
+// ReadUsers reads a page of users
+func ReadUsers(db sqlutil.Queryable, userType UserType, limit, offset int) (users []*User, err error) {
 	users = make([]*User, 0)
-	rows, e := db.Query(fmt.Sprintf("SELECT %s FROM users WHERE deleted=false ORDER BY created DESC LIMIT $1 OFFSET $2", userColumns()), limit, offset)
+	// TODO - make this not bad
+	query := fmt.Sprintf("SELECT %s FROM users WHERE deleted=false ORDER BY created DESC LIMIT $1 OFFSET $2", userColumns())
+	if userType == UserTypeCommunity {
+		query = fmt.Sprintf("SELECT %s FROM users WHERE deleted=false AND type = 2 ORDER BY created DESC LIMIT $1 OFFSET $2", userColumns())
+	} else if userType == UserTypeUser {
+		query = fmt.Sprintf("SELECT %s FROM users WHERE deleted=false AND type = 1 ORDER BY created DESC LIMIT $1 OFFSET $2", userColumns())
+	}
+
+	rows, e := db.Query(query, limit, offset)
 	if e != nil {
 		if e == sql.ErrNoRows {
 			return []*User{}, nil
@@ -48,4 +56,36 @@ func UsersSearch(db sqlutil.Queryable, query string, limit, offset int) ([]*User
 	}
 	defer rows.Close()
 	return scanUsers(rows)
+}
+
+func CommunityUsers(db sqlutil.Queryable, community *User, order string, limit, offset int) ([]*User, error) {
+	rows, e := db.Query(qCommunityMembers, community.Id, order, limit, offset)
+	if e != nil {
+		if e == sql.ErrNoRows {
+			return []*User{}, nil
+		}
+		return nil, errors.New500Error(e.Error())
+	}
+	defer rows.Close()
+	if us, e := scanUsers(rows); e != nil {
+		return nil, errors.New500Error(e.Error())
+	} else {
+		return us, nil
+	}
+}
+
+func UserCommunities(db sqlutil.Queryable, user *User, order string, limit, offset int) ([]*User, error) {
+	rows, e := db.Query(qUserCommunities, user.Id, order, limit, offset)
+	if e != nil {
+		if e == sql.ErrNoRows {
+			return []*User{}, nil
+		}
+		return nil, errors.New500Error(e.Error())
+	}
+	defer rows.Close()
+	if us, e := scanUsers(rows); e != nil {
+		return nil, errors.New500Error(e.Error())
+	} else {
+		return us, nil
+	}
 }
