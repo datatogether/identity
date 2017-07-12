@@ -93,6 +93,7 @@ func NewServerRoutes() *http.ServeMux {
 	m.Handle("/users/", middleware(UserHandler))
 	m.Handle("/users/search", middleware(UsersSearchHandler))
 	m.Handle("/users/communities", middleware(UserCommunitiesHandler))
+	m.Handle("/communities/users", middleware(CommunityMembersHandler))
 
 	m.Handle("/oauth/github", middleware(GithubOauthHandler))
 	m.Handle("/oauth/github/callback", middleware(GithubOAuthCallbackHandler))

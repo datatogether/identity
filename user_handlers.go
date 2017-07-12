@@ -215,6 +215,24 @@ func UserCommunitiesHandler(w http.ResponseWriter, r *http.Request) {
 	Res(w, true, res)
 }
 
+func CommunityMembersHandler(w http.ResponseWriter, r *http.Request) {
+	page := PageFromRequest(r)
+	p := &user.UsersCommunityMembersParams{
+		User:      sessionUser(r),
+		Community: &user.User{Id: r.FormValue("id")},
+		Limit:     page.Size,
+		Offset:    page.Offset(),
+	}
+
+	res := []*user.User{}
+	if err := UsersRequests.CommunityMembers(p, &res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+
+	Res(w, true, res)
+}
+
 // delete a user
 // func DeleteCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
 // 	u := sessionUser(ctx)
