@@ -12,7 +12,7 @@ func TestUserTypeMarshalJSON(t *testing.T) {
 		err    error
 	}{
 		{UserTypeUser, "\"user\"", nil},
-		{UserTypeOrganization, "\"community\"", nil},
+		{UserTypeCommunity, "\"community\"", nil},
 	}
 
 	for i, c := range cases {
@@ -33,7 +33,7 @@ func TestUserTypeUnmarshalJSON(t *testing.T) {
 		err  error
 	}{
 		{[]byte("[\"user\"]"), UserTypeUser, nil},
-		{[]byte("[\"community\"]"), UserTypeOrganization, nil},
+		{[]byte("[\"community\"]"), UserTypeCommunity, nil},
 	}
 
 	for i, c := range cases {

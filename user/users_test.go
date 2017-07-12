@@ -3,7 +3,7 @@ package user
 import "testing"
 
 func TestReadUsers(t *testing.T) {
-	users, err := ReadUsers(testDB, 20, 0)
+	users, err := ReadUsers(testDB, UserTypeNone, 20, 0)
 	if err != nil {
 		t.Error(err.Error())
 		return
@@ -12,7 +12,7 @@ func TestReadUsers(t *testing.T) {
 		t.Error("expected more than one user")
 	}
 
-	users, err = ReadUsers(testDB, 20, 100000)
+	users, err = ReadUsers(testDB, UserTypeNone, 20, 100000)
 	if err != nil {
 		t.Error(err.Error())
 		return
