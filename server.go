@@ -84,18 +84,15 @@ func NewServerRoutes() *http.ServeMux {
 	m.Handle("/session/keys", middleware(KeysHandler))
 	m.Handle("/session/oauth", middleware(SessionUserTokensHandler))
 	m.Handle("/session/oauth/github/repoaccess", middleware(GithubRepoAccessHandler))
+	m.Handle("/session/communities", middleware(SessionCommunitiesHandler))
 
 	m.Handle("/jwt", middleware(JwtHandler))
 	m.Handle("/logout", middleware(LogoutHandler))
 
-	// m.Handle("/session/communities", handler)
 	m.Handle("/users", middleware(UsersHandler))
 	m.Handle("/users/", middleware(UserHandler))
 	m.Handle("/users/search", middleware(UsersSearchHandler))
-
-	// TODO - finish communities implementation
-	// m.Handle("/communities", middleware(GroupsHandler))
-	// m.Handle("/communities/", middleware(GroupHandler))
+	m.Handle("/users/communities", middleware(UserCommunitiesHandler))
 
 	m.Handle("/oauth/github", middleware(GithubOauthHandler))
 	m.Handle("/oauth/github/callback", middleware(GithubOAuthCallbackHandler))

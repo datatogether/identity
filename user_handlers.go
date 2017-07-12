@@ -198,6 +198,23 @@ func UsersSearchHandler(w http.ResponseWriter, r *http.Request) {
 	Res(w, true, res)
 }
 
+func UserCommunitiesHandler(w http.ResponseWriter, r *http.Request) {
+	page := PageFromRequest(r)
+	p := &user.UsersCommunitiesParams{
+		User:   &user.User{Id: r.FormValue("id")},
+		Order:  "created desc",
+		Limit:  page.Size,
+		Offset: page.Offset(),
+	}
+
+	res := []*user.User{}
+	if err := UsersRequests.UserCommunities(p, &res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+	Res(w, true, res)
+}
+
 // delete a user
 // func DeleteCurrentUserHandler(w http.ResponseWriter, r *http.Request) {
 // 	u := sessionUser(ctx)

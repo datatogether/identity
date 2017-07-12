@@ -20,8 +20,9 @@ INSERT INTO reset_tokens VALUES
 -- name: delete-keys
 delete from keys;
 -- name: insert-keys
-INSERT INTO keys VALUES
-  -- type, sha_256, created, last_seen, name, user_id, public_bytes, private_bytes, deleted
+INSERT INTO keys 
+  (type, sha_256, created, last_seen, name, user_id, public_bytes, private_bytes, deleted)
+VALUES
   ('rsa', '\x',1464282748,1464282748,'stuff','61e91231-c7cc-47b4-b392-89fb180a7570', '\x', '\x', false);
 
 

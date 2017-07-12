@@ -61,7 +61,8 @@ CREATE TABLE reset_tokens (
 CREATE TABLE community_users (
   community_id        UUID NOT NULL references users(id),
   user_id             UUID NOT NULL references users(id),
-  invited_by          UUID NOT NULL references users(id),
+  -- TODO - this hsoult be UUID references users(id), but then it would be forced to accept null values, which is a problem
+  invited_by          text NOT NULL default '',
   role                text NOT NULL default 'member',
   joined              timestamp,
   PRIMARY KEY         (community_id, user_id)

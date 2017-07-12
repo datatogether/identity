@@ -131,7 +131,7 @@ type UsersCommunitiesParams struct {
 	Offset int
 }
 
-func (r UserRequests) UserCommunities(p *UsersCommunityMembersParams, res *[]*User) error {
+func (r UserRequests) UserCommunities(p *UsersCommunitiesParams, res *[]*User) error {
 	// override order for now
 	p.Order = "users.created DESC"
 
