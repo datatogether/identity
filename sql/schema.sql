@@ -13,13 +13,14 @@ CREATE TABLE users (
   name               text default '',
   description        text default '',
   home_url           text default '',
+  color              text NOT NULL default '#999999',
+  thumb_url          text NOT NULL default '',
+  profile_url        text NOT NULL default '',
+  poster_url         text NOT NULL default '',
   email_confirmed    boolean DEFAULT false,
   is_admin           boolean DEFAULT false,
   current_key        text NOT NULL default '',
   access_token       text UNIQUE NOT NULL,
-  --   color              text NOT NULL default '#999999',
-  --   profile_url        text NOT NULL default '',
-  --   poster_url         text NOT NULL default ''
   deleted            boolean DEFAULT false
 );
 
