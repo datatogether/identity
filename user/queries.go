@@ -15,3 +15,22 @@ INSERT INTO users
   (id, created, updated, username, type, password_hash, email, name, description, home_url, email_confirmed, access_token)
 VALUES 
   ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`
+
+const qCommunityRemoveUser = `
+delete from community_users
+where
+  community_id = $1 AND
+  user_id = $2;`
+
+const qUserAcceptCommunityInvite = `
+update community_users
+set joined = $3
+where
+  community_id = $1 AND
+  user_id = $2;`
+
+const qCommunityInviteUser = `
+insert into community_users 
+  (community_id, user_id, invited_by)
+values 
+  ($1, $2, $3, $4);`

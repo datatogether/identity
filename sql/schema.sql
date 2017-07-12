@@ -1,5 +1,5 @@
 -- name: drop-all
-DROP TABLE IF EXISTS user_keys, oauth_users, oauth_tokens, keys, users, reset_tokens, groups, group_users CASCADE;
+DROP TABLE IF EXISTS user_keys, oauth_users, oauth_tokens, keys, users, reset_tokens, groups, group_users, community_users CASCADE;
 
 -- name: create-users
 CREATE TABLE users (
@@ -17,6 +17,9 @@ CREATE TABLE users (
   is_admin           boolean DEFAULT false,
   current_key        text NOT NULL default '',
   access_token       text UNIQUE NOT NULL,
+  --   color              text NOT NULL default '#999999',
+  --   profile_url        text NOT NULL default '',
+  --   poster_url         text NOT NULL default ''
   deleted            boolean DEFAULT false
 );
 
@@ -53,25 +56,12 @@ CREATE TABLE reset_tokens (
   used               boolean DEFAULT false
 );
 
--- name: create-groups
-CREATE TABLE groups (
-  id                 UUID PRIMARY KEY,
-  created            integer NOT NULL,
-  updated            integer NOT NULL,
-  creator_id         UUID NOT NULL references users(id),
-  title              text NOT NULL default '',
-  description        text NOT NULL default '',
-  color              text NOT NULL default '#999999',
-  profile_url        text NOT NULL default '',
-  poster_url         text NOT NULL default ''
-);
-
--- name: create-group_users
-CREATE TABLE group_users (
-  group_id            UUID NOT NULL references groups(id),
+-- name: create-community_users
+CREATE TABLE community_users (
+  community_id        UUID NOT NULL references users(id),
   user_id             UUID NOT NULL references users(id),
   invited_by          UUID NOT NULL references users(id),
   role                text NOT NULL default 'member',
   joined              timestamp,
-  PRIMARY KEY         (group_id, user_id)
+  PRIMARY KEY         (community_id, user_id)
 );

@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/datatogether/errors"
 	"github.com/datatogether/identity/access_token"
+	// "github.com/datatogether/identity/community"
 	"github.com/datatogether/sqlutil"
 	"github.com/pborman/uuid"
 	"strings"
@@ -503,13 +504,13 @@ func (u *User) UnmarshalSQL(row sqlutil.Scannable) error {
 	return nil
 }
 
-// func (u *User) AcceptGroupInvite(db *sql.DB, g *Group) error {
-// 	t := time.Now().Round(time.Second).In(time.UTC)
-// 	_, err := db.Exec(qUserAcceptGroupInvite, g.Id, u.Id, t)
-// 	return err
-// }
+func (u *User) AcceptCommunityInvite(db *sql.DB, c *User) error {
+	t := time.Now().Round(time.Second).In(time.UTC)
+	_, err := db.Exec(qUserAcceptCommunityInvite, c.Id, u.Id, t)
+	return err
+}
 
-// func (u *User) DeclineGroupInvite(db *sql.DB, g *Group) error {
-// 	_, err := db.Exec(qGroupRemoveUser, g.Id, u.Id)
-// 	return err
-// }
+func (u *User) DeclineCommunityInvite(db *sql.DB, c *User) error {
+	_, err := db.Exec(qCommunityRemoveUser, c.Id, u.Id)
+	return err
+}

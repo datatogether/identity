@@ -10,7 +10,7 @@ type UserType int
 const (
 	UserTypeNone UserType = iota
 	UserTypeUser
-	UserTypeOrganization
+	UserTypeCommunity
 )
 
 func (ut UserType) String() string {
@@ -19,15 +19,15 @@ func (ut UserType) String() string {
 		return "none"
 	case UserTypeUser:
 		return "user"
-	case UserTypeOrganization:
-		return "organization"
+	case UserTypeCommunity:
+		return "community"
 	}
 
 	return "unknown"
 }
 
 func (ut UserType) MarshalJSON() ([]byte, error) {
-	s, ok := map[UserType]string{UserTypeNone: "none", UserTypeUser: "user", UserTypeOrganization: "organization"}[ut]
+	s, ok := map[UserType]string{UserTypeNone: "none", UserTypeUser: "user", UserTypeCommunity: "community"}[ut]
 	if !ok {
 		return nil, fmt.Errorf("invalid UserType %d", ut)
 	}
@@ -41,7 +41,7 @@ func (ut *UserType) UnmarshalJSON(data []byte) error {
 		return fmt.Errorf("User type should be a string, got %s", data)
 	}
 
-	got, ok := map[string]UserType{"none": UserTypeNone, "user": UserTypeUser, "organization": UserTypeOrganization}[s]
+	got, ok := map[string]UserType{"none": UserTypeNone, "user": UserTypeUser, "community": UserTypeCommunity}[s]
 	if !ok {
 		return fmt.Errorf("invalid UserType %q", s)
 	}
