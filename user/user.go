@@ -250,7 +250,7 @@ func (u *User) Save(db sqlutil.Transactable) error {
 			return errors.New500Error(err.Error())
 		}
 
-		if _, err := tx.Exec("UPDATE users SET updated=$2, username= $3, type=$4, name=$5, description=$6, home_url= $7, color = $8, thumb_url = $9, profile_url = $10, poster_url = $11, email_confirmed=$12, access_token=$13 WHERE id= $1 AND deleted=false", u.Id, u.Updated, u.Username, u.Type, u.Name, u.Description, u.HomeUrl, u.Color, u.ThumbUrl, u.ProfileUrl, u.PosterUrl, u.emailConfirmed, u.accessToken); err != nil {
+		if _, err := tx.Exec("UPDATE users SET updated=$2, username= $3, type=$4, name=$5, description=$6, home_url= $7, color = $8, thumb_url = $9, profile_url = $10, poster_url = $11, email_confirmed=$12 WHERE id= $1 AND deleted=false", u.Id, u.Updated, u.Username, u.Type, u.Name, u.Description, u.HomeUrl, u.Color, u.ThumbUrl, u.ProfileUrl, u.PosterUrl, u.emailConfirmed); err != nil {
 			tx.Rollback()
 			// return errors.Error500IfErr(err)
 			return err
@@ -301,7 +301,7 @@ func (u *User) Delete(db sqlutil.Transactable) error {
 		return errors.Error500IfErr(err)
 	}
 
-	// TODO - Users that delete their profile will need to have all their datasets deleted as well
+	// TODO - Users that delete their profile will need to have all their dependant stuff deleted as well
 
 	if err := tx.Commit(); err != nil {
 		tx.Rollback()
