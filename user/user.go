@@ -383,12 +383,14 @@ func (u *User) validateUpdate(db sqlutil.Queryable, prev *User) error {
 		u.Email = prev.Email
 	}
 
+	// un-clobber access token
+	u.accessToken = prev.accessToken
+
 	if err := u.valFields(); err != nil {
 		return err
 	}
 
 	if u.Username != prev.Username {
-		// log.Info(u.Username, prev.Username)
 		if taken, err := UsernameTaken(db, u.Username); err != nil {
 			return err
 		} else if taken {

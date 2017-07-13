@@ -13,7 +13,7 @@ import (
 
 var (
 	// alphanumeric must start with a letter and contian only letters & numbers
-	alphaNumericRegex = regexp.MustCompile(`^[a-z0-9_-]{2,35}$`)
+	alphaNumericRegex = regexp.MustCompile(`^[A-Za-z0-9_-]{2,35}$`)
 	titleRegex        = regexp.MustCompile(`^[\sa-z0-9_-]{1,200}$`)
 	// yes, this is just ripped from the internet somewhere. Yes it should be improved. TODO - validate emails the right way
 	emailRegex = regexp.MustCompile(`(?i)[A-Z0-9!#$%&'*+/=?^_{|}~-]+(?:\.[A-Z0-9!#$%&'*+/=?^_{|}~-]+)*@(?:[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?\.)+[A-Z0-9](?:[A-Z0-9-]*[A-Z0-9])?`)

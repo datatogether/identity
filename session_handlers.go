@@ -140,6 +140,21 @@ func GetSessionHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func SessionCommunitiesHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "OPTIONS":
+		CORSHandler(w, r)
+	case "GET":
+		GetSessionCommunities(w, r)
+	// case "POST":
+	// 	CreateUserKeyHandler(w, r)
+	// case "DELETE":
+	// DeleteUserKeyHandler(w, r)
+	default:
+		ErrRes(w, ErrNotFound)
+	}
+}
+
+func GetSessionCommunities(w http.ResponseWriter, r *http.Request) {
 	u := sessionUser(r)
 	if u == nil || u.Id == "" {
 		ErrRes(w, NewFmtError(http.StatusUnauthorized, "unauthorized"))

@@ -27,6 +27,9 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 		CORSHandler(w, r)
 	case "GET":
 		SingleUserHandler(w, r)
+	case "PUT", "POST":
+		SaveUserHandler(w, r)
+	// case "DELETE":
 	default:
 		ErrRes(w, ErrNotFound)
 	}

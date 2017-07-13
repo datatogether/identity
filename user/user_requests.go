@@ -74,9 +74,10 @@ type UsersSaveParams struct {
 }
 
 func (r UserRequests) Save(p *UsersSaveParams, res *User) error {
-	if !p.User.isAdmin && p.User.Id != p.Subject.Id {
-		return errors.ErrAccessDenied
-	}
+	// TODO - restore w community membership lookup
+	// if !p.User.isAdmin && p.User.Id != p.Subject.Id {
+	// 	return errors.ErrAccessDenied
+	// }
 
 	if err := p.Subject.Save(r.Store); err != nil {
 		return err
