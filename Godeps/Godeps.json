@@ -13,7 +13,7 @@
 		},
 		{
 			"ImportPath": "github.com/datatogether/sqlutil",
-			"Rev": "ec9f4403bc0568985249d9964ace5867b1e08019"
+			"Rev": "c471ed88dde35a8af1fb164020b88b65badee7f7"
 		},
 		{
 			"ImportPath": "github.com/dgrijalva/jwt-go",

@@ -53,7 +53,23 @@ func main() {
 		sessionStore.Options.Domain = cfg.UserCookieDomain
 	}
 
-	go sqlutil.ConnectToDb("postgres", cfg.PostgresDbUrl, appDB)
+	go func() {
+		if err := sqlutil.ConnectToDb("postgres", cfg.PostgresDbUrl, appDB); err != nil {
+			log.Panic(err.Error())
+		}
+		created, err := sqlutil.EnsureSeedData(appDB, packagePath("sql/schema.sql"), packagePath("sql/test_data.sql"),
+			"users",
+			"reset_tokens",
+			"keys",
+			"oauth_tokens",
+			"community_users")
+		if err != nil {
+			log.Panic(err.Error())
+		}
+		if len(created) > 0 {
+			log.Infoln("created tables & seed data:", created)
+		}
+	}()
 	go listenRpc()
 
 	s := &http.Server{}
