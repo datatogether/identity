@@ -19,10 +19,6 @@ func listenRpc() error {
 		log.Infof("register RPC Users error: %s", err)
 		return err
 	}
-	if err := rpc.Register(GroupsRequests); err != nil {
-		log.Infof("register RPC Groups error: %s", err)
-		return err
-	}
 
 	ln, err := net.Listen("tcp", fmt.Sprintf(":%s", cfg.RpcPort))
 	if err != nil {

@@ -53,7 +53,23 @@ func main() {
 		sessionStore.Options.Domain = cfg.UserCookieDomain
 	}
 
-	go sqlutil.ConnectToDb("postgres", cfg.PostgresDbUrl, appDB)
+	go func() {
+		if err := sqlutil.ConnectToDb("postgres", cfg.PostgresDbUrl, appDB); err != nil {
+			log.Panic(err.Error())
+		}
+		created, err := sqlutil.EnsureSeedData(appDB, packagePath("sql/schema.sql"), packagePath("sql/test_data.sql"),
+			"users",
+			"reset_tokens",
+			"keys",
+			"oauth_tokens",
+			"community_users")
+		if err != nil {
+			log.Panic(err.Error())
+		}
+		if len(created) > 0 {
+			log.Infoln("created tables & seed data:", created)
+		}
+	}()
 	go listenRpc()
 
 	s := &http.Server{}
@@ -84,18 +100,16 @@ func NewServerRoutes() *http.ServeMux {
 	m.Handle("/session/keys", middleware(KeysHandler))
 	m.Handle("/session/oauth", middleware(SessionUserTokensHandler))
 	m.Handle("/session/oauth/github/repoaccess", middleware(GithubRepoAccessHandler))
+	m.Handle("/session/communities", middleware(SessionCommunitiesHandler))
 
 	m.Handle("/jwt", middleware(JwtHandler))
 	m.Handle("/logout", middleware(LogoutHandler))
 
-	// m.Handle("/session/groups", handler)
 	m.Handle("/users", middleware(UsersHandler))
 	m.Handle("/users/", middleware(UserHandler))
 	m.Handle("/users/search", middleware(UsersSearchHandler))
-
-	// TODO - finish groups implementation
-	// m.Handle("/groups", middleware(GroupsHandler))
-	// m.Handle("/groups/", middleware(GroupHandler))
+	m.Handle("/users/communities", middleware(UserCommunitiesHandler))
+	m.Handle("/communities/users", middleware(CommunityMembersHandler))
 
 	m.Handle("/oauth/github", middleware(GithubOauthHandler))
 	m.Handle("/oauth/github/callback", middleware(GithubOAuthCallbackHandler))

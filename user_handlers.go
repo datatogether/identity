@@ -27,6 +27,9 @@ func UserHandler(w http.ResponseWriter, r *http.Request) {
 		CORSHandler(w, r)
 	case "GET":
 		SingleUserHandler(w, r)
+	case "PUT", "POST":
+		SaveUserHandler(w, r)
+	// case "DELETE":
 	default:
 		ErrRes(w, ErrNotFound)
 	}
@@ -62,6 +65,7 @@ func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 		page := PageFromRequest(r)
 		p := &user.UsersListParams{
 			User:   sessionUser(r),
+			Type:   reqUserType(r),
 			Limit:  page.Size,
 			Offset: page.Offset(),
 		}
@@ -74,6 +78,17 @@ func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	// ExecRequest(w, envelope, req)
+}
+
+func reqUserType(r *http.Request) user.UserType {
+	switch r.FormValue("type") {
+	case "community":
+		return user.UserTypeCommunity
+	case "user":
+		return user.UserTypeUser
+	default:
+		return user.UserTypeNone
+	}
 }
 
 // Create a user from the api, feed password in as a query param
@@ -183,6 +198,41 @@ func UsersSearchHandler(w http.ResponseWriter, r *http.Request) {
 		ErrRes(w, err)
 		return
 	}
+	Res(w, true, res)
+}
+
+func UserCommunitiesHandler(w http.ResponseWriter, r *http.Request) {
+	page := PageFromRequest(r)
+	p := &user.UsersCommunitiesParams{
+		User:   &user.User{Id: r.FormValue("id")},
+		Order:  "created desc",
+		Limit:  page.Size,
+		Offset: page.Offset(),
+	}
+
+	res := []*user.User{}
+	if err := UsersRequests.UserCommunities(p, &res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+	Res(w, true, res)
+}
+
+func CommunityMembersHandler(w http.ResponseWriter, r *http.Request) {
+	page := PageFromRequest(r)
+	p := &user.UsersCommunityMembersParams{
+		User:      sessionUser(r),
+		Community: &user.User{Id: r.FormValue("id")},
+		Limit:     page.Size,
+		Offset:    page.Offset(),
+	}
+
+	res := []*user.User{}
+	if err := UsersRequests.CommunityMembers(p, &res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+
 	Res(w, true, res)
 }
 

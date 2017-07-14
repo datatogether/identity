@@ -139,6 +139,43 @@ func GetSessionHandler(w http.ResponseWriter, r *http.Request) {
 	}
 }
 
+func SessionCommunitiesHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "OPTIONS":
+		CORSHandler(w, r)
+	case "GET":
+		GetSessionCommunities(w, r)
+	// case "POST":
+	// 	CreateUserKeyHandler(w, r)
+	// case "DELETE":
+	// DeleteUserKeyHandler(w, r)
+	default:
+		ErrRes(w, ErrNotFound)
+	}
+}
+
+func GetSessionCommunities(w http.ResponseWriter, r *http.Request) {
+	u := sessionUser(r)
+	if u == nil || u.Id == "" {
+		ErrRes(w, NewFmtError(http.StatusUnauthorized, "unauthorized"))
+		return
+	}
+	page := PageFromRequest(r)
+
+	p := &user.UsersCommunitiesParams{
+		User:   u,
+		Order:  "created DESC",
+		Limit:  page.Size,
+		Offset: page.Offset(),
+	}
+	res := []*user.User{}
+	if err := UsersRequests.UserCommunities(p, &res); err != nil {
+		ErrRes(w, err)
+		return
+	}
+	Res(w, true, res)
+}
+
 func LoginHandler(w http.ResponseWriter, r *http.Request) {
 	var login struct {
 		Username string

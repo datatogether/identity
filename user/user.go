@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"github.com/datatogether/errors"
 	"github.com/datatogether/identity/access_token"
+	// "github.com/datatogether/identity/community"
 	"github.com/datatogether/sqlutil"
 	"github.com/pborman/uuid"
 	"strings"
@@ -36,6 +37,14 @@ type User struct {
 	Description string `json:"description" sql:"description"`
 	// url this user wants the world to click
 	HomeUrl string `json:"home_url" sql:"home_url"`
+	// color this user likes to use as their theme color
+	Color string `json:"color"`
+	// url for their thumbnail
+	ThumbUrl string `json:"thumbUrl"`
+	// profile photo url
+	ProfileUrl string `json:"profileUrl"`
+	// header image url
+	PosterUrl string `json:"posterUrl"`
 	// sh256 multihash of public key that this user is currently using for signatures
 	CurrentKey string `json:"currentKey"`
 	// have we ever successfully sent this user an email?
@@ -73,7 +82,7 @@ func NewUserFromString(s string) *User {
 }
 
 func userColumns() string {
-	return "id, created, updated, username, type, name, description, home_url, email, current_key, email_confirmed, is_admin"
+	return "id, created, updated, username, type, name, description, home_url, color, thumb_url, profile_url, poster_url, email, current_key, email_confirmed, is_admin"
 }
 
 // _user is a private struct for marshaling & unmarshaling
@@ -211,7 +220,7 @@ func (u *User) Save(db sqlutil.Transactable) error {
 			}
 			u.accessToken = token
 
-			if _, e = db.Exec(qUserInsert, u.Id, u.Created, u.Updated, u.Username, u.Type, hash, u.Email, u.Name, u.Description, u.HomeUrl, u.emailConfirmed, u.accessToken); e != nil {
+			if _, e = db.Exec(qUserInsert, u.Id, u.Created, u.Updated, u.Username, u.Type, hash, u.Email, u.Name, u.Description, u.HomeUrl, u.Color, u.ThumbUrl, u.ProfileUrl, u.PosterUrl, u.emailConfirmed, u.accessToken); e != nil {
 				return errors.NewFmtError(500, e.Error())
 			}
 
@@ -241,7 +250,7 @@ func (u *User) Save(db sqlutil.Transactable) error {
 			return errors.New500Error(err.Error())
 		}
 
-		if _, err := tx.Exec("UPDATE users SET updated=$2, username= $3, type=$4, name=$5, description=$6, home_url= $7, email_confirmed=$8, access_token=$9 WHERE id= $1 AND deleted=false", u.Id, u.Updated, u.Username, u.Type, u.Name, u.Description, u.HomeUrl, u.emailConfirmed, u.accessToken); err != nil {
+		if _, err := tx.Exec("UPDATE users SET updated=$2, username= $3, type=$4, name=$5, description=$6, home_url= $7, color = $8, thumb_url = $9, profile_url = $10, poster_url = $11, email_confirmed=$12 WHERE id= $1 AND deleted=false", u.Id, u.Updated, u.Username, u.Type, u.Name, u.Description, u.HomeUrl, u.Color, u.ThumbUrl, u.ProfileUrl, u.PosterUrl, u.emailConfirmed); err != nil {
 			tx.Rollback()
 			// return errors.Error500IfErr(err)
 			return err
@@ -292,7 +301,7 @@ func (u *User) Delete(db sqlutil.Transactable) error {
 		return errors.Error500IfErr(err)
 	}
 
-	// TODO - Users that delete their profile will need to have all their datasets deleted as well
+	// TODO - Users that delete their profile will need to have all their dependant stuff deleted as well
 
 	if err := tx.Commit(); err != nil {
 		tx.Rollback()
@@ -374,12 +383,14 @@ func (u *User) validateUpdate(db sqlutil.Queryable, prev *User) error {
 		u.Email = prev.Email
 	}
 
+	// un-clobber access token
+	u.accessToken = prev.accessToken
+
 	if err := u.valFields(); err != nil {
 		return err
 	}
 
 	if u.Username != prev.Username {
-		// log.Info(u.Username, prev.Username)
 		if taken, err := UsernameTaken(db, u.Username); err != nil {
 			return err
 		} else if taken {
@@ -477,13 +488,14 @@ func (u *User) SavePassword(db sqlutil.Execable, password string) error {
 func (u *User) UnmarshalSQL(row sqlutil.Scannable) error {
 	var (
 		id, username, name, email, description, homeUrl, key string
+		color, thumbUrl, profileUrl, posterUrl               string
 		created, updated                                     int64
 		emailConfirmed, isAdmin                              bool
 		t                                                    UserType
 	)
 
-	// "id, created, updated, username, type, name, email, email_confirmed"
-	if err := row.Scan(&id, &created, &updated, &username, &t, &name, &description, &homeUrl, &email, &key, &emailConfirmed, &isAdmin); err != nil {
+	if err := row.Scan(&id, &created, &updated, &username, &t, &name, &description, &homeUrl,
+		&color, &thumbUrl, &profileUrl, &posterUrl, &email, &key, &emailConfirmed, &isAdmin); err != nil {
 		return err
 	}
 	*u = User{
@@ -496,6 +508,11 @@ func (u *User) UnmarshalSQL(row sqlutil.Scannable) error {
 		Email:          email,
 		emailConfirmed: emailConfirmed,
 		Description:    description,
+		HomeUrl:        homeUrl,
+		Color:          color,
+		ThumbUrl:       thumbUrl,
+		ProfileUrl:     profileUrl,
+		PosterUrl:      posterUrl,
 		isAdmin:        isAdmin,
 		CurrentKey:     key,
 	}
@@ -503,13 +520,13 @@ func (u *User) UnmarshalSQL(row sqlutil.Scannable) error {
 	return nil
 }
 
-// func (u *User) AcceptGroupInvite(db *sql.DB, g *Group) error {
-// 	t := time.Now().Round(time.Second).In(time.UTC)
-// 	_, err := db.Exec(qUserAcceptGroupInvite, g.Id, u.Id, t)
-// 	return err
-// }
+func (u *User) AcceptCommunityInvite(db *sql.DB, c *User) error {
+	t := time.Now().Round(time.Second).In(time.UTC)
+	_, err := db.Exec(qUserAcceptCommunityInvite, c.Id, u.Id, t)
+	return err
+}
 
-// func (u *User) DeclineGroupInvite(db *sql.DB, g *Group) error {
-// 	_, err := db.Exec(qGroupRemoveUser, g.Id, u.Id)
-// 	return err
-// }
+func (u *User) DeclineCommunityInvite(db *sql.DB, c *User) error {
+	_, err := db.Exec(qCommunityRemoveUser, c.Id, u.Id)
+	return err
+}
