@@ -56,7 +56,7 @@ type User struct {
 	// often users get auto-generated based on IP for rate lmiting & stuff
 	// this flag tracks that.
 	// TODO - for this to be useful it'll need to be Exported
-	Anonymous bool `json:"_"`
+	Anonymous bool `json:",omitempty"`
 }
 
 // create a new user struct pointer from a provided id string

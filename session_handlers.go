@@ -130,12 +130,20 @@ func setUserSessionCookie(w http.ResponseWriter, r *http.Request, id string) err
 
 func GetSessionHandler(w http.ResponseWriter, r *http.Request) {
 	u := sessionUser(r)
+
 	envelope := r.FormValue("envelope") != "false"
 	if u == nil || u.Id == "" {
 		ErrRes(w, NewFmtError(http.StatusUnauthorized, "unauthorized"))
 		return
 	} else {
-		Res(w, envelope, u)
+		if err := u.ReadApiToken(appDB); err != nil {
+			ErrRes(w, NewFmtError(http.StatusInternalServerError, "error reading user: %s", err.Error()))
+			return
+		}
+		Res(w, envelope, struct {
+			User        *user.User
+			AccessToken string
+		}{u, u.AccessToken()})
 	}
 }
 
