@@ -53,6 +53,7 @@ func cookieUser(r *http.Request) *user.User {
 // or as request params
 func tokenUser(r *http.Request) *user.User {
 	u := user.NewUser("")
+	fmt.Println(r.Header.Get("access_token"))
 	if r.Header.Get("access_token") != "" {
 		u = user.NewAccessTokenUser(r.Header.Get("access_token"))
 		return u
