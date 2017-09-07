@@ -64,7 +64,7 @@ func main() {
 			"oauth_tokens",
 			"community_users")
 		if err != nil {
-			log.Panic(err.Error())
+			log.Infof("error allocating seed data: %s", err.Error())
 		}
 		if len(created) > 0 {
 			log.Infoln("created tables & seed data:", created)
