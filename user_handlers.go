@@ -74,6 +74,12 @@ func ListUsersHandler(w http.ResponseWriter, r *http.Request) {
 			ErrRes(w, err)
 			return
 		}
+		// TODO - should this be here?
+		for _, u := range res {
+			// remove sensitive fields
+			u.Email = ""
+		}
+
 		Res(w, envelope, res)
 	}
 

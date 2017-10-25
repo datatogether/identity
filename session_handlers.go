@@ -53,6 +53,7 @@ func cookieUser(r *http.Request) *user.User {
 // or as request params
 func tokenUser(r *http.Request) *user.User {
 	u := user.NewUser("")
+	fmt.Println(r.Header.Get("access_token"))
 	if r.Header.Get("access_token") != "" {
 		u = user.NewAccessTokenUser(r.Header.Get("access_token"))
 		return u
@@ -136,14 +137,7 @@ func GetSessionHandler(w http.ResponseWriter, r *http.Request) {
 		ErrRes(w, NewFmtError(http.StatusUnauthorized, "unauthorized"))
 		return
 	} else {
-		if err := u.ReadApiToken(appDB); err != nil {
-			ErrRes(w, NewFmtError(http.StatusInternalServerError, "error reading user: %s", err.Error()))
-			return
-		}
-		Res(w, envelope, struct {
-			User        *user.User
-			AccessToken string
-		}{u, u.AccessToken()})
+		Res(w, envelope, u)
 	}
 }
 
@@ -248,4 +242,31 @@ func LogoutHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	MessageResponse(w, "successfully logged out", nil)
+}
+
+func AccessTokenHandler(w http.ResponseWriter, r *http.Request) {
+	switch r.Method {
+	case "OPTIONS":
+		CORSHandler(w, r)
+	case "GET":
+		GetAccessTokenHandler(w, r)
+	default:
+		ErrRes(w, ErrNotFound)
+	}
+}
+
+func GetAccessTokenHandler(w http.ResponseWriter, r *http.Request) {
+	u := sessionUser(r)
+	if u == nil || u.Id == "" {
+		ErrRes(w, NewFmtError(http.StatusUnauthorized, "unauthorized"))
+		return
+	} else {
+		if err := u.ReadApiToken(appDB); err != nil {
+			ErrRes(w, NewFmtError(http.StatusInternalServerError, "error reading user: %s", err.Error()))
+			return
+		}
+		Res(w, true, map[string]string{
+			"access_token": u.AccessToken(),
+		})
+	}
 }

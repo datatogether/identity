@@ -13,7 +13,7 @@ func JwtHandler(w http.ResponseWriter, r *http.Request) {
 	switch r.Method {
 	case "OPTIONS":
 		CORSHandler(w, r)
-	case "POST":
+	case "GET", "POST":
 		JwtTokenHandler(w, r)
 	default:
 		ErrRes(w, ErrNotFound)

@@ -30,7 +30,7 @@ type User struct {
 	// password, only really used on account creation
 	password string
 	// user's email address
-	Email string `json:"email" sql:"email"`
+	Email string `json:"email,omitempty" sql:"email"`
 	// user name field. could be first[space]last, but not strictly enforced
 	Name string `json:"name" sql:"name"`
 	// user-filled description of self
