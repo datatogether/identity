@@ -93,6 +93,7 @@ func NewServerRoutes() *http.ServeMux {
 	m := http.NewServeMux()
 
 	m.Handle("/", middleware(NotFoundHandler))
+	m.Handle("/healthcheck", middleware(HealthCheckHandler))
 
 	m.Handle("/publickey", middleware(PublicKeyHandler))
 
