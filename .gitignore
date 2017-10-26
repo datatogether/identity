@@ -1,6 +1,5 @@
 .DS_Store
 gin-bin
-sentry
-coverage.out
+coverage.txt
 *.env
 identity
