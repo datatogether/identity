@@ -6,29 +6,27 @@
 ![Codecov](https://img.shields.io/codecov/c/github/datatogether/identity.svg)
 ![CI](https://img.shields.io/circleci/project/github/datatogether/identity.svg)
 
-
-[1-3 sentence description of repository contents]
+User and identity management server.
 
 ## License & Copyright
 
-[Modelled on [project guidelines template](https://github.com/datatogether/roadmap/blob/master/PROJECT.md#license--copyright-readme-block) ]
+Copyright (C) 2017 Data Together  
+This program is free software: you can redistribute it and/or modify it under
+the terms of the GNU General Public License as published by the Free Software
+Foundation, version 3.0.
+
+This program is distributed in the hope that it will be useful, but WITHOUT ANY
+WARRANTY; without even the implied warranty of MERCHANTABILITY or FITNESS FOR A
+PARTICULAR PURPOSE.
 
 ## Getting Involved
 
-We would love involvement from more people! If you notice any errors or would like to submit changes, please see our [Contributing Guidelines](./.github/CONTRIBUTING.md). 
+We would love involvement from more people! If you notice any errors or would
+like to submit changes, please see our [Contributing Guidelines](./.github/CONTRIBUTING.md).
 
-We use GitHub issues for [tracking bugs and feature requests](https://github.com/datatogether/REPONAME/issues) and Pull Requests (PRs) for [submitting changes](https://github.com/datatogether/REPONAME/pulls)
-
-## ...
-
-## [Optional section(s) on Installation (actually using the service!), Architecture, Dependencies, and Other Considerations]
-
-[fill  out this section if the repo contains deployable/installable code]
+We use GitHub issues for [tracking bugs and feature requests](https://github.com/datatogether/identity/issues)
+and Pull Requests (PRs) for [submitting changes](https://github.com/datatogether/identity/pulls)
 
 ## Development
 
-[Step-by-step instructions about how to set up a local dev environment and any dependencies]
-
-## Deployment
-
-[Optional section with deployment instructions]
+Coming soon!
